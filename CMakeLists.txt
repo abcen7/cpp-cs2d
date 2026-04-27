@@ -21,4 +21,11 @@ add_executable(cs2ds
 target_include_directories(cs2ds PRIVATE src ${FLTK_INCLUDE_DIR})
 target_link_libraries(cs2ds PRIVATE ${FLTK_LIBRARIES} pthread)
 
-file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
+add_custom_command(
+    TARGET cs2ds
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets
+            ${CMAKE_BINARY_DIR}/assets
+    COMMENT "Copying assets to build directory"
+)

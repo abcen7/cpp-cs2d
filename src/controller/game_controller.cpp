@@ -191,8 +191,8 @@ void GameController::handleGameOverIfNeeded() {
 }
 
 void GameController::startGame() {
-    static constexpr const char* DEFAULT_MAP_PATH = "assets/maps/de_simple.map";
-    if (!mp_gameState->beginNewGame(DEFAULT_MAP_PATH)) {
+    const char* selectedMapPath = mp_mainWindow->getMenuView()->getSelectedMapPath();
+    if (!mp_gameState->beginNewGame(selectedMapPath)) {
         return;
     }
 
