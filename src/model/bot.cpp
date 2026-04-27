@@ -47,6 +47,17 @@ const Weapon* Bot::getActiveWeapon() const {
     return mp_weapon.get();
 }
 
+void Bot::respawnAt(float worldX, float worldY) {
+    setPositionX(worldX);
+    setPositionY(worldY);
+    setHealth(START_HEALTH);
+    setArmor(0);
+    m_aimAngleRadians = 0.0f;
+    if (mp_weapon) {
+        mp_weapon->refillMagazineToFull();
+    }
+}
+
 void Bot::moveTowards(float targetX, float targetY, float deltaSeconds) {
     if (!mp_map) {
         return;

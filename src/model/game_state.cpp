@@ -54,6 +54,9 @@ bool GameState::beginNewGame(const std::string& mapPath) {
     m_bots.clear();
     m_bullets.clear();
     m_bonuses.clear();
+    m_playerRespawnPending = false;
+    m_playerRespawnTimerSeconds = 0.0f;
+    m_botRespawnTimerSeconds.clear();
     m_bonusSpawnCountdownSeconds = 0.0f;
 
     auto pMap = std::make_shared<GameMap>();
@@ -72,12 +75,15 @@ bool GameState::beginNewGame(const std::string& mapPath) {
 
     mp_map = std::move(pMap);
     mp_player = std::make_shared<Player>(spawn->first, spawn->second);
+    m_playerSpawnWorldX = spawn->first;
+    m_playerSpawnWorldY = spawn->second;
 
     const auto& botSpawns = mp_map->getBotSpawnWorldPositions();
     for (const auto& spawnPoint : botSpawns) {
         auto pBot = std::make_shared<Bot>(spawnPoint.first, spawnPoint.second, mp_map);
         pBot->setPatrolPoints(botSpawns);
         m_bots.push_back(std::move(pBot));
+        m_botRespawnTimerSeconds.push_back(0.0f);
     }
     return true;
 }
@@ -88,6 +94,9 @@ void GameState::clearSession() {
     m_bots.clear();
     m_bullets.clear();
     m_bonuses.clear();
+    m_playerRespawnPending = false;
+    m_playerRespawnTimerSeconds = 0.0f;
+    m_botRespawnTimerSeconds.clear();
     m_bonusSpawnCountdownSeconds = 0.0f;
     mp_map.reset();
     mp_player.reset();
@@ -170,7 +179,7 @@ void GameState::processBonusCollisions() {
         const float by = pBonus->getPositionY();
 
         bool collected = false;
-        if (mp_player) {
+        if (mp_player && mp_player->getHealth() > 0) {
             if (canCharacterCollectBonus(mp_player->getPositionX(), mp_player->getPositionY(), bx, by)) {
                 pBonus->applyToPlayer(*mp_player);
                 collected = true;
@@ -285,6 +294,61 @@ int GameState::getScoreLimit() const {
     return m_scoreLimit;
 }
 
+void GameState::schedulePlayerRespawnIfNeeded() {
+    if (!mp_player) {
+        return;
+    }
+    if (mp_player->getHealth() > 0 || m_playerRespawnPending) {
+        return;
+    }
+    m_playerRespawnPending = true;
+    m_playerRespawnTimerSeconds = PLAYER_RESPAWN_DELAY_SECONDS;
+}
+
+void GameState::scheduleBotRespawnIfNeeded(size_t botIndex) {
+    if (botIndex >= m_bots.size() || botIndex >= m_botRespawnTimerSeconds.size()) {
+        return;
+    }
+    const auto& pBot = m_bots[botIndex];
+    if (!pBot || pBot->getHealth() > 0) {
+        return;
+    }
+    if (m_botRespawnTimerSeconds[botIndex] > 0.0f) {
+        return;
+    }
+    m_botRespawnTimerSeconds[botIndex] = BOT_RESPAWN_DELAY_SECONDS;
+}
+
+void GameState::updateRespawns(float deltaSeconds) {
+    if (!mp_map || deltaSeconds <= 0.0f) {
+        return;
+    }
+
+    if (m_playerRespawnPending && mp_player) {
+        m_playerRespawnTimerSeconds -= deltaSeconds;
+        if (m_playerRespawnTimerSeconds <= 0.0f) {
+            mp_player->respawnAt(m_playerSpawnWorldX, m_playerSpawnWorldY);
+            m_playerRespawnPending = false;
+            m_playerRespawnTimerSeconds = 0.0f;
+        }
+    }
+
+    const auto& botSpawns = mp_map->getBotSpawnWorldPositions();
+    const size_t count = std::min({m_bots.size(), m_botRespawnTimerSeconds.size(), botSpawns.size()});
+    for (size_t i = 0; i < count; ++i) {
+        if (m_botRespawnTimerSeconds[i] <= 0.0f) {
+            continue;
+        }
+        m_botRespawnTimerSeconds[i] -= deltaSeconds;
+        if (m_botRespawnTimerSeconds[i] <= 0.0f) {
+            if (m_bots[i]) {
+                m_bots[i]->respawnAt(botSpawns[i].first, botSpawns[i].second);
+            }
+            m_botRespawnTimerSeconds[i] = 0.0f;
+        }
+    }
+}
+
 void GameState::processBulletCharacterCollisions() {
     if (!mp_player) {
         return;
@@ -313,20 +377,26 @@ void GameState::processBulletCharacterCollisions() {
         };
 
         if (pBullet->getTeam() == BulletTeam::Player) {
-            for (const auto& pBot : m_bots) {
+            for (size_t i = 0; i < m_bots.size(); ++i) {
+                const auto& pBot = m_bots[i];
                 if (!pBot || pBot->getHealth() <= 0) {
                     continue;
                 }
+                const int hpBefore = pBot->getHealth();
                 if (hitCharacter(*pBot)) {
-                    if (pBot->getHealth() <= 0) {
+                    if (hpBefore > 0 && pBot->getHealth() <= 0) {
                         m_playerScore += 1;
+                        scheduleBotRespawnIfNeeded(i);
                     }
                     break;
                 }
             }
         } else {
             if (mp_player->getHealth() > 0) {
-                hitCharacter(*mp_player);
+                const int hpBefore = mp_player->getHealth();
+                if (hitCharacter(*mp_player) && hpBefore > 0 && mp_player->getHealth() <= 0) {
+                    schedulePlayerRespawnIfNeeded();
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 #include "controller/game_controller.h"
 
+#include "model/player.h"
 #include "view/game_view.h"
 
 #include <FL/Fl.H>
@@ -133,17 +134,20 @@ void GameController::tickLogic(float deltaSeconds) {
     }
 
     GameView* pGameView = mp_mainWindow->getGameView();
-    mp_inputController->tick(
-        *pPlayer,
-        *mp_gameState,
-        *pMap,
-        deltaSeconds,
-        static_cast<float>(pGameView->w()),
-        static_cast<float>(pGameView->h()));
+    if (pPlayer->getHealth() > 0) {
+        mp_inputController->tick(
+            *pPlayer,
+            *mp_gameState,
+            *pMap,
+            deltaSeconds,
+            static_cast<float>(pGameView->w()),
+            static_cast<float>(pGameView->h()));
+    }
 
     mp_gameState->updateBots(deltaSeconds);
     mp_gameState->updateBullets(deltaSeconds);
     mp_gameState->updateBonuses(deltaSeconds);
+    mp_gameState->updateRespawns(deltaSeconds);
     mp_gameState->updateMatchClock(deltaSeconds);
     Fl::awake();
 }

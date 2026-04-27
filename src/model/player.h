@@ -31,6 +31,7 @@ public:
     [[nodiscard]] int getActiveWeaponAmmoInMagazine() const;
     [[nodiscard]] int getActiveWeaponMagazineCapacity() const;
     [[nodiscard]] bool isActiveWeaponReloading() const;
+    void respawnAt(float worldX, float worldY);
 
     void updateModel(float deltaSeconds) override;
 

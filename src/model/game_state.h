@@ -46,6 +46,7 @@ public:
     [[nodiscard]] float getElapsedMatchSeconds() const;
     [[nodiscard]] float getMatchDurationLimitSeconds() const;
     [[nodiscard]] int getScoreLimit() const;
+    void updateRespawns(float deltaSeconds);
 
 private:
     void processBulletCharacterCollisions();
@@ -53,6 +54,8 @@ private:
     void trySpawnRandomBonus();
     [[nodiscard]] bool isBonusSpotBlocked(float worldX, float worldY) const;
     [[nodiscard]] std::unique_ptr<Bonus> createRandomBonus(float worldX, float worldY);
+    void schedulePlayerRespawnIfNeeded();
+    void scheduleBotRespawnIfNeeded(size_t botIndex);
 
     GameScreenState m_screenState = GameScreenState::Menu;
     std::shared_ptr<GameMap> mp_map;
@@ -64,6 +67,13 @@ private:
     float m_elapsedMatchSeconds = 0.0f;
     float m_matchDurationLimitSeconds = 180.0f;
     int m_scoreLimit = 15;
+    float m_playerSpawnWorldX = 0.0f;
+    float m_playerSpawnWorldY = 0.0f;
+    bool m_playerRespawnPending = false;
+    float m_playerRespawnTimerSeconds = 0.0f;
+    std::vector<float> m_botRespawnTimerSeconds;
+    static constexpr float PLAYER_RESPAWN_DELAY_SECONDS = 3.0f;
+    static constexpr float BOT_RESPAWN_DELAY_SECONDS = 5.0f;
     float m_bonusSpawnCountdownSeconds = 0.0f;
     std::mt19937 m_randomEngine;
 };

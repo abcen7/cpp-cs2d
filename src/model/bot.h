@@ -24,6 +24,7 @@ public:
     [[nodiscard]] BotAiState getAiState() const;
     [[nodiscard]] Weapon* getActiveWeapon();
     [[nodiscard]] const Weapon* getActiveWeapon() const;
+    void respawnAt(float worldX, float worldY);
 
     void updateModel(float deltaSeconds) override;
 

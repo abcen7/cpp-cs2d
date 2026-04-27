@@ -81,6 +81,21 @@ bool Player::isActiveWeaponReloading() const {
     return pWeapon->isReloading();
 }
 
+void Player::respawnAt(float worldX, float worldY) {
+    setPositionX(worldX);
+    setPositionY(worldY);
+    setHealth(START_HEALTH);
+    setArmor(0);
+    m_isMoving = false;
+    m_aimAngleRadians = 0.0f;
+    m_activeWeaponSlot = 0;
+    for (auto& pWeapon : mp_weapons) {
+        if (pWeapon) {
+            pWeapon->refillMagazineToFull();
+        }
+    }
+}
+
 void Player::switchWeaponSlot(int slotIndex) {
     if (slotIndex >= 0 && slotIndex < 3) {
         m_activeWeaponSlot = slotIndex;
