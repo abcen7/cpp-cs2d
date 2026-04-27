@@ -46,6 +46,8 @@ public:
     [[nodiscard]] float getElapsedMatchSeconds() const;
     [[nodiscard]] float getMatchDurationLimitSeconds() const;
     [[nodiscard]] int getScoreLimit() const;
+    [[nodiscard]] bool isPlayerRespawnPending() const;
+    [[nodiscard]] float getPlayerRespawnSecondsLeft() const;
     void updateRespawns(float deltaSeconds);
 
 private:

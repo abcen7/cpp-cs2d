@@ -9,6 +9,7 @@
 #include <cmath>
 #include <mutex>
 #include <cstdio>
+#include <cstring>
 
 HudView::HudView(int x, int y, int width, int height) : Fl_Group(x, y, width, height) {
     end();
@@ -46,6 +47,10 @@ void HudView::draw() {
                 static_cast<int>(std::ceil(mp_gameState->getMatchDurationLimitSeconds())) - elapsedSeconds);
             const int remMinutes = remainingSeconds / 60;
             const int remSecs = remainingSeconds % 60;
+            const bool playerAlive = pPlayer->getHealth() > 0;
+            const int respawnTenths = static_cast<int>(std::ceil(mp_gameState->getPlayerRespawnSecondsLeft() * 10.0f));
+            const int respawnWhole = respawnTenths / 10;
+            const int respawnFrac = respawnTenths % 10;
             std::snprintf(
                 buffer,
                 sizeof(buffer),
@@ -60,6 +65,16 @@ void HudView::draw() {
                 pPlayer->getActiveWeaponAmmoInMagazine(),
                 pPlayer->getActiveWeaponMagazineCapacity(),
                 pPlayer->isActiveWeaponReloading() ? "  [reload]" : "");
+
+            if (!playerAlive) {
+                char deathSuffix[48];
+                if (mp_gameState->isPlayerRespawnPending()) {
+                    std::snprintf(deathSuffix, sizeof(deathSuffix), "  [DEAD respawn: %d.%1ds]", respawnWhole, respawnFrac);
+                } else {
+                    std::snprintf(deathSuffix, sizeof(deathSuffix), "  [DEAD]");
+                }
+                std::snprintf(buffer + std::strlen(buffer), sizeof(buffer) - std::strlen(buffer), "%s", deathSuffix);
+            }
         } else {
             std::snprintf(buffer, sizeof(buffer), "HP: --   Armor: --   Ammo: --/--");
         }

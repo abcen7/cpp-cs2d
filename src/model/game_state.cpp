@@ -294,6 +294,14 @@ int GameState::getScoreLimit() const {
     return m_scoreLimit;
 }
 
+bool GameState::isPlayerRespawnPending() const {
+    return m_playerRespawnPending;
+}
+
+float GameState::getPlayerRespawnSecondsLeft() const {
+    return m_playerRespawnTimerSeconds > 0.0f ? m_playerRespawnTimerSeconds : 0.0f;
+}
+
 void GameState::schedulePlayerRespawnIfNeeded() {
     if (!mp_player) {
         return;
