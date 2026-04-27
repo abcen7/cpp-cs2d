@@ -13,14 +13,18 @@
 #include <FL/Enumerations.H>
 #include <FL/Fl.H>
 #include <FL/Fl_PNG_Image.H>
+#include <FL/Fl_RGB_Image.H>
 #include <FL/fl_draw.H>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <mutex>
+#include <vector>
 
 namespace {
+
+constexpr float kTextureAngleOffsetRadians = -1.5707963267948966f;
 
 void setTileColor(TileType type) {
     switch (type) {
@@ -40,6 +44,70 @@ void setTileColor(TileType type) {
             fl_color(52, 56, 64);
             break;
     }
+}
+
+void drawRotatedTexture(Fl_PNG_Image* pTexture, float centerX, float centerY, int targetSize, float angleRadians) {
+    if (pTexture == nullptr || targetSize <= 0) {
+        return;
+    }
+
+    const char* const* pData = pTexture->data();
+    if (pTexture->count() <= 0 || pData == nullptr || pData[0] == nullptr) {
+        const int half = targetSize / 2;
+        pTexture->draw(static_cast<int>(centerX) - half, static_cast<int>(centerY) - half);
+        return;
+    }
+
+    const int sourceWidth = pTexture->data_w();
+    const int sourceHeight = pTexture->data_h();
+    const int sourceDepth = pTexture->d();
+    if (sourceWidth <= 0 || sourceHeight <= 0 || sourceDepth <= 0) {
+        return;
+    }
+
+    const auto* source = reinterpret_cast<const unsigned char*>(pData[0]);
+    const int sourceStride = pTexture->ld() > 0 ? pTexture->ld() : sourceWidth * sourceDepth;
+    std::vector<unsigned char> pixels(static_cast<size_t>(targetSize * targetSize * 4), 0);
+
+    const float correctedAngle = angleRadians + kTextureAngleOffsetRadians;
+    const float cosAngle = std::cos(correctedAngle);
+    const float sinAngle = std::sin(correctedAngle);
+    const float destCenter = (static_cast<float>(targetSize) - 1.0f) * 0.5f;
+    const float sourceCenterX = (static_cast<float>(sourceWidth) - 1.0f) * 0.5f;
+    const float sourceCenterY = (static_cast<float>(sourceHeight) - 1.0f) * 0.5f;
+    const float sourceScaleX = static_cast<float>(sourceWidth) / static_cast<float>(targetSize);
+    const float sourceScaleY = static_cast<float>(sourceHeight) / static_cast<float>(targetSize);
+
+    for (int y = 0; y < targetSize; ++y) {
+        for (int x = 0; x < targetSize; ++x) {
+            const float dx = static_cast<float>(x) - destCenter;
+            const float dy = static_cast<float>(y) - destCenter;
+            const int sourceX = static_cast<int>(std::round((cosAngle * dx + sinAngle * dy) * sourceScaleX + sourceCenterX));
+            const int sourceY = static_cast<int>(std::round((-sinAngle * dx + cosAngle * dy) * sourceScaleY + sourceCenterY));
+            if (sourceX < 0 || sourceX >= sourceWidth || sourceY < 0 || sourceY >= sourceHeight) {
+                continue;
+            }
+
+            const auto* sourcePixel = source + sourceY * sourceStride + sourceX * sourceDepth;
+            auto* targetPixel = pixels.data() + static_cast<size_t>((y * targetSize + x) * 4);
+            if (sourceDepth == 1) {
+                targetPixel[0] = sourcePixel[0];
+                targetPixel[1] = sourcePixel[0];
+                targetPixel[2] = sourcePixel[0];
+                targetPixel[3] = 255;
+                continue;
+            }
+
+            targetPixel[0] = sourcePixel[0];
+            targetPixel[1] = sourceDepth > 1 ? sourcePixel[1] : sourcePixel[0];
+            targetPixel[2] = sourceDepth > 2 ? sourcePixel[2] : sourcePixel[0];
+            targetPixel[3] = sourceDepth > 3 ? sourcePixel[3] : 255;
+        }
+    }
+
+    Fl_RGB_Image rotatedImage(reinterpret_cast<const uchar*>(pixels.data()), targetSize, targetSize, 4);
+    const int half = targetSize / 2;
+    rotatedImage.draw(static_cast<int>(centerX) - half, static_cast<int>(centerY) - half);
 }
 
 } // namespace
@@ -208,10 +276,12 @@ void GameView::draw() {
 
     const float radius = pPlayer->getWidth() * 0.5f;
     if (m_texturesEnabled && mp_playerTexture) {
-        const int half = m_playerTextureSize / 2;
-        mp_playerTexture->draw(
-            static_cast<int>(playerScreenX) - half,
-            static_cast<int>(playerScreenY) - half);
+        drawRotatedTexture(
+            mp_playerTexture.get(),
+            playerScreenX,
+            playerScreenY,
+            m_playerTextureSize,
+            pPlayer->getAimAngleRadians());
     } else {
         fl_color(70, 210, 95);
         fl_pie(
@@ -237,12 +307,15 @@ void GameView::draw() {
         const float botScreenX = static_cast<float>(x()) + (pBot->getPositionX() - cameraX);
         const float botScreenY = static_cast<float>(y()) + (pBot->getPositionY() - cameraY);
         const float botRadius = pBot->getWidth() * 0.5f;
+        const float botAim = pBot->getAimAngleRadians();
 
         if (m_texturesEnabled && mp_botTexture) {
-            const int half = m_botTextureSize / 2;
-            mp_botTexture->draw(
-                static_cast<int>(botScreenX) - half,
-                static_cast<int>(botScreenY) - half);
+            drawRotatedTexture(
+                mp_botTexture.get(),
+                botScreenX,
+                botScreenY,
+                m_botTextureSize,
+                botAim);
         } else {
             fl_color(220, 80, 80);
             fl_pie(
@@ -254,7 +327,6 @@ void GameView::draw() {
                 360.0);
         }
 
-        const float botAim = pBot->getAimAngleRadians();
         const float botLineX = botScreenX + std::cos(botAim) * 18.0f;
         const float botLineY = botScreenY + std::sin(botAim) * 18.0f;
         fl_color(255, 220, 220);
