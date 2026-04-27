@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <mutex>
 
 namespace {
 
@@ -51,6 +52,10 @@ void GameView::setBindings(GameState* pGameState, InputController* pInputControl
     mp_inputController = pInputController;
 }
 
+void GameView::setStateMutex(std::mutex* pStateMutex) {
+    mp_stateMutex = pStateMutex;
+}
+
 void GameView::clearBindings() {
     mp_gameState = nullptr;
     mp_inputController = nullptr;
@@ -64,6 +69,10 @@ void GameView::setEscapeHandler(void (*handler)(void*), void* userData) {
 }
 
 void GameView::draw() {
+    std::unique_lock<std::mutex> stateLock;
+    if (mp_stateMutex != nullptr) {
+        stateLock = std::unique_lock<std::mutex>(*mp_stateMutex);
+    }
     fl_push_clip(x(), y(), w(), h());
 
     if (mp_gameState == nullptr) {

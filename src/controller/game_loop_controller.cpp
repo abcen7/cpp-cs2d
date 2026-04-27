@@ -1,13 +1,15 @@
 #include "controller/game_loop_controller.h"
 
 #include <chrono>
+#include <utility>
 
 GameLoopController::~GameLoopController() {
     stop();
 }
 
-void GameLoopController::start() {
+void GameLoopController::start(const std::function<void(float)>& updateCallback) {
     stop();
+    m_updateCallback = updateCallback;
     m_isRunning = true;
     m_logicThread = std::thread(&GameLoopController::loop, this);
 }
@@ -17,11 +19,24 @@ void GameLoopController::stop() {
     if (m_logicThread.joinable()) {
         m_logicThread.join();
     }
+    m_updateCallback = nullptr;
 }
 
 void GameLoopController::loop() {
-    using namespace std::chrono_literals;
+    using clock = std::chrono::steady_clock;
+    using secondsf = std::chrono::duration<float>;
+    constexpr float targetStepSeconds = 1.0f / 60.0f;
+    const auto sleepDuration = std::chrono::duration_cast<clock::duration>(secondsf(targetStepSeconds));
+    auto previous = clock::now();
+
     while (m_isRunning) {
-        std::this_thread::sleep_for(16ms);
+        const auto now = clock::now();
+        const float deltaSeconds = std::chrono::duration_cast<secondsf>(now - previous).count();
+        previous = now;
+
+        if (m_updateCallback) {
+            m_updateCallback(deltaSeconds > 0.0f ? deltaSeconds : targetStepSeconds);
+        }
+        std::this_thread::sleep_for(sleepDuration);
     }
 }

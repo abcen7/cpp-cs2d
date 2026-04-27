@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 class GameMap;
 class GameState;
 class Player;
@@ -22,9 +24,7 @@ public:
         float viewHeight);
 
 private:
-    void updateAimFromMouse(Player& player, float viewWidth, float viewHeight);
-
-    Player* mp_player = nullptr;
+    static void updateAimFromMouse(Player& player, float mouseLocalX, float mouseLocalY, float viewWidth, float viewHeight);
 
     bool m_keyW = false;
     bool m_keyA = false;
@@ -35,4 +35,7 @@ private:
     float m_mouseLocalY = 0.0f;
 
     bool m_primaryFireHeld = false;
+    bool m_reloadRequested = false;
+    int m_requestedWeaponSlot = -1;
+    std::mutex m_inputMutex;
 };

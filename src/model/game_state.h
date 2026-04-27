@@ -41,6 +41,11 @@ public:
     void updateBots(float deltaSeconds);
     [[nodiscard]] const std::vector<std::shared_ptr<Bot>>& getBots() const;
     [[nodiscard]] int getPlayerScore() const;
+    void updateMatchClock(float deltaSeconds);
+    [[nodiscard]] bool hasReachedGameOverCondition() const;
+    [[nodiscard]] float getElapsedMatchSeconds() const;
+    [[nodiscard]] float getMatchDurationLimitSeconds() const;
+    [[nodiscard]] int getScoreLimit() const;
 
 private:
     void processBulletCharacterCollisions();
@@ -56,6 +61,9 @@ private:
     std::vector<std::unique_ptr<Bullet>> m_bullets;
     std::vector<std::unique_ptr<Bonus>> m_bonuses;
     int m_playerScore = 0;
+    float m_elapsedMatchSeconds = 0.0f;
+    float m_matchDurationLimitSeconds = 180.0f;
+    int m_scoreLimit = 15;
     float m_bonusSpawnCountdownSeconds = 0.0f;
     std::mt19937 m_randomEngine;
 };

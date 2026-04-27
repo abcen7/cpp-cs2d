@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 
 #include "controller/game_loop_controller.h"
 #include "controller/input_controller.h"
@@ -29,7 +30,9 @@ private:
 
     static void onGameTick(void* pData);
     static void onEscapeFromGame(void* pData);
-    void tickGame();
+    void tickRender();
+    void tickLogic(float deltaSeconds);
+    void handleGameOverIfNeeded();
     void scheduleGameTick();
     void unscheduleGameTick();
 
@@ -37,6 +40,7 @@ private:
     std::unique_ptr<GameState> mp_gameState;
     std::unique_ptr<InputController> mp_inputController;
     std::unique_ptr<GameLoopController> mp_gameLoopController;
+    std::mutex m_stateMutex;
 
     bool m_gameTickActive = false;
 };

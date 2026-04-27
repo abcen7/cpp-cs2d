@@ -33,6 +33,7 @@ bool isMoveRightKey(int key) {
 } // namespace
 
 void InputController::reset(float viewWidth, float viewHeight) {
+    std::lock_guard<std::mutex> lock(m_inputMutex);
     m_keyW = false;
     m_keyA = false;
     m_keyS = false;
@@ -40,13 +41,16 @@ void InputController::reset(float viewWidth, float viewHeight) {
     m_mouseLocalX = viewWidth * 0.5f;
     m_mouseLocalY = viewHeight * 0.5f;
     m_primaryFireHeld = false;
+    m_reloadRequested = false;
+    m_requestedWeaponSlot = -1;
 }
 
 void InputController::setPlayer(Player* pPlayer) {
-    mp_player = pPlayer;
+    (void)pPlayer;
 }
 
 void InputController::handleKey(int key, bool isDown) {
+    std::lock_guard<std::mutex> lock(m_inputMutex);
     if (isMoveUpKey(key)) {
         m_keyW = isDown;
     } else if (isMoveLeftKey(key)) {
@@ -61,35 +65,33 @@ void InputController::handleKey(int key, bool isDown) {
         return;
     }
 
-    if (mp_player == nullptr) {
-        return;
-    }
-
     if (isKeyMatch(key, 'r', 'R')) {
-        mp_player->beginReloadActiveWeapon();
+        m_reloadRequested = true;
     } else if (key == '1') {
-        mp_player->switchWeaponSlot(0);
+        m_requestedWeaponSlot = 0;
     } else if (key == '2') {
-        mp_player->switchWeaponSlot(1);
+        m_requestedWeaponSlot = 1;
     } else if (key == '3') {
-        mp_player->switchWeaponSlot(2);
+        m_requestedWeaponSlot = 2;
     }
 }
 
 void InputController::setMouseLocal(float localX, float localY) {
+    std::lock_guard<std::mutex> lock(m_inputMutex);
     m_mouseLocalX = localX;
     m_mouseLocalY = localY;
 }
 
 void InputController::setPrimaryFireHeld(bool held) {
+    std::lock_guard<std::mutex> lock(m_inputMutex);
     m_primaryFireHeld = held;
 }
 
-void InputController::updateAimFromMouse(Player& player, float viewWidth, float viewHeight) {
+void InputController::updateAimFromMouse(Player& player, float mouseLocalX, float mouseLocalY, float viewWidth, float viewHeight) {
     const float centerX = viewWidth * 0.5f;
     const float centerY = viewHeight * 0.5f;
-    const float dx = m_mouseLocalX - centerX;
-    const float dy = m_mouseLocalY - centerY;
+    const float dx = mouseLocalX - centerX;
+    const float dy = mouseLocalY - centerY;
     if (dx * dx + dy * dy > 4.0f) {
         player.setAimAngleRadians(std::atan2(dy, dx));
     }
@@ -102,25 +104,56 @@ void InputController::tick(
     float deltaSeconds,
     float viewWidth,
     float viewHeight) {
+    bool keyW = false;
+    bool keyA = false;
+    bool keyS = false;
+    bool keyD = false;
+    float mouseLocalX = 0.0f;
+    float mouseLocalY = 0.0f;
+    bool primaryFireHeld = false;
+    bool reloadRequested = false;
+    int requestedWeaponSlot = -1;
+    {
+        std::lock_guard<std::mutex> lock(m_inputMutex);
+        keyW = m_keyW;
+        keyA = m_keyA;
+        keyS = m_keyS;
+        keyD = m_keyD;
+        mouseLocalX = m_mouseLocalX;
+        mouseLocalY = m_mouseLocalY;
+        primaryFireHeld = m_primaryFireHeld;
+        reloadRequested = m_reloadRequested;
+        requestedWeaponSlot = m_requestedWeaponSlot;
+        m_reloadRequested = false;
+        m_requestedWeaponSlot = -1;
+    }
+
     player.updateWeapons(deltaSeconds);
 
-    updateAimFromMouse(player, viewWidth, viewHeight);
+    if (reloadRequested) {
+        player.beginReloadActiveWeapon();
+    }
+    if (requestedWeaponSlot >= 0) {
+        player.switchWeaponSlot(requestedWeaponSlot);
+    }
 
-    const bool isMoving = m_keyW || m_keyA || m_keyS || m_keyD;
+    updateAimFromMouse(player, mouseLocalX, mouseLocalY, viewWidth, viewHeight);
+
+    const bool isMoving = keyW || keyA || keyS || keyD;
     player.setMovingForSpread(isMoving);
 
     float moveX = 0.0f;
     float moveY = 0.0f;
-    if (m_keyW) {
+    if (keyW) {
         moveY -= 1.0f;
     }
-    if (m_keyS) {
+    if (keyS) {
         moveY += 1.0f;
     }
-    if (m_keyA) {
+    if (keyA) {
         moveX -= 1.0f;
     }
-    if (m_keyD) {
+    if (keyD) {
         moveX += 1.0f;
     }
 
@@ -133,7 +166,7 @@ void InputController::tick(
     const float speed = player.getSpeed();
     player.tryMoveWithWallCollision(map, moveX * speed * deltaSeconds, moveY * speed * deltaSeconds);
 
-    if (m_primaryFireHeld) {
+    if (primaryFireHeld) {
         player.tryFireWeapon(gameState, map);
     }
 }

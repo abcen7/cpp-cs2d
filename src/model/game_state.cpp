@@ -50,6 +50,7 @@ GameScreenState GameState::getScreenState() const {
 
 bool GameState::beginNewGame(const std::string& mapPath) {
     m_playerScore = 0;
+    m_elapsedMatchSeconds = 0.0f;
     m_bots.clear();
     m_bullets.clear();
     m_bonuses.clear();
@@ -83,6 +84,7 @@ bool GameState::beginNewGame(const std::string& mapPath) {
 
 void GameState::clearSession() {
     m_playerScore = 0;
+    m_elapsedMatchSeconds = 0.0f;
     m_bots.clear();
     m_bullets.clear();
     m_bonuses.clear();
@@ -258,6 +260,29 @@ const std::vector<std::shared_ptr<Bot>>& GameState::getBots() const {
 
 int GameState::getPlayerScore() const {
     return m_playerScore;
+}
+
+void GameState::updateMatchClock(float deltaSeconds) {
+    if (deltaSeconds <= 0.0f) {
+        return;
+    }
+    m_elapsedMatchSeconds += deltaSeconds;
+}
+
+bool GameState::hasReachedGameOverCondition() const {
+    return m_playerScore >= m_scoreLimit || m_elapsedMatchSeconds >= m_matchDurationLimitSeconds;
+}
+
+float GameState::getElapsedMatchSeconds() const {
+    return m_elapsedMatchSeconds;
+}
+
+float GameState::getMatchDurationLimitSeconds() const {
+    return m_matchDurationLimitSeconds;
+}
+
+int GameState::getScoreLimit() const {
+    return m_scoreLimit;
 }
 
 void GameState::processBulletCharacterCollisions() {

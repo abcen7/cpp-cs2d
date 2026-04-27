@@ -5,6 +5,11 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Widget.H>
 
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <mutex>
+
 GameController::GameController()
     : mp_mainWindow(std::make_unique<MainWindow>(1024, 768, "CS2DS")),
       mp_gameState(std::make_unique<GameState>()),
@@ -15,10 +20,13 @@ GameController::GameController()
     mp_mainWindow->getMenuView()->getExitButton()->callback(&GameController::onExitClicked, this);
     mp_mainWindow->getAboutView()->getBackButton()->callback(&GameController::onBackFromAboutClicked, this);
     mp_mainWindow->getGameOverView()->getBackButton()->callback(&GameController::onBackToMenuClicked, this);
+    mp_mainWindow->getGameView()->setStateMutex(&m_stateMutex);
+    mp_mainWindow->getHudView()->setStateMutex(&m_stateMutex);
 }
 
 GameController::~GameController() {
     unscheduleGameTick();
+    mp_gameLoopController->stop();
 }
 
 void GameController::run() {
@@ -88,8 +96,10 @@ void GameController::unscheduleGameTick() {
 
 void GameController::onGameTick(void* pData) {
     auto* pController = static_cast<GameController*>(pData);
-    pController->tickGame();
-    Fl::repeat_timeout(1.0 / 60.0, &GameController::onGameTick, pData);
+    pController->tickRender();
+    if (pController->m_gameTickActive) {
+        Fl::repeat_timeout(1.0 / 60.0, &GameController::onGameTick, pData);
+    }
 }
 
 void GameController::onEscapeFromGame(void* pData) {
@@ -97,7 +107,21 @@ void GameController::onEscapeFromGame(void* pData) {
     pController->stopGameAndReturnMenu();
 }
 
-void GameController::tickGame() {
+void GameController::tickRender() {
+    handleGameOverIfNeeded();
+    bool isPlaying = false;
+    {
+        std::lock_guard<std::mutex> lock(m_stateMutex);
+        isPlaying = (mp_gameState->getScreenState() == GameScreenState::Playing);
+    }
+    if (isPlaying) {
+        mp_mainWindow->getGameView()->redraw();
+        mp_mainWindow->getHudView()->redraw();
+    }
+}
+
+void GameController::tickLogic(float deltaSeconds) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);
     if (mp_gameState->getScreenState() != GameScreenState::Playing) {
         return;
     }
@@ -109,7 +133,6 @@ void GameController::tickGame() {
     }
 
     GameView* pGameView = mp_mainWindow->getGameView();
-    const float deltaSeconds = 1.0f / 60.0f;
     mp_inputController->tick(
         *pPlayer,
         *mp_gameState,
@@ -121,9 +144,46 @@ void GameController::tickGame() {
     mp_gameState->updateBots(deltaSeconds);
     mp_gameState->updateBullets(deltaSeconds);
     mp_gameState->updateBonuses(deltaSeconds);
+    mp_gameState->updateMatchClock(deltaSeconds);
+    Fl::awake();
+}
 
-    pGameView->redraw();
-    mp_mainWindow->getHudView()->redraw();
+void GameController::handleGameOverIfNeeded() {
+    char finalText[96];
+    bool mustSwitchToGameOver = false;
+    {
+        std::lock_guard<std::mutex> lock(m_stateMutex);
+        if (mp_gameState->getScreenState() != GameScreenState::Playing) {
+            return;
+        }
+        if (!mp_gameState->hasReachedGameOverCondition()) {
+            return;
+        }
+
+        const int elapsedSeconds = static_cast<int>(std::floor(mp_gameState->getElapsedMatchSeconds()));
+        const int minutes = std::max(0, elapsedSeconds / 60);
+        const int seconds = std::max(0, elapsedSeconds % 60);
+        std::snprintf(
+            finalText,
+            sizeof(finalText),
+            "Score: %d/%d  Time: %02d:%02d",
+            mp_gameState->getPlayerScore(),
+            mp_gameState->getScoreLimit(),
+            minutes,
+            seconds);
+        mp_gameState->setScreenState(GameScreenState::GameOver);
+        mustSwitchToGameOver = true;
+    }
+    if (!mustSwitchToGameOver) {
+        return;
+    }
+
+    mp_gameLoopController->stop();
+    unscheduleGameTick();
+    mp_inputController->setPlayer(nullptr);
+    mp_mainWindow->getGameView()->clearBindings();
+    mp_mainWindow->getGameOverView()->setFinalText(finalText);
+    mp_mainWindow->showGameOverScreen();
 }
 
 void GameController::startGame() {
@@ -142,6 +202,7 @@ void GameController::startGame() {
 
     mp_mainWindow->getHudView()->setGameState(mp_gameState.get());
 
+    mp_gameLoopController->start([this](float deltaSeconds) { tickLogic(deltaSeconds); });
     scheduleGameTick();
     mp_mainWindow->showGameScreen();
     pGameView->take_focus();
