@@ -25,6 +25,7 @@ bool GameMap::loadFromFile(const std::string& path) {
     m_heightInTiles = 0;
     m_hasPlayerSpawn = false;
     m_botSpawnWorldPositions.clear();
+    m_bonusSpotWorldPositions.clear();
 
     std::ifstream file(path);
     if (!file) {
@@ -90,6 +91,8 @@ bool GameMap::loadFromFile(const std::string& path) {
                 m_hasPlayerSpawn = true;
             } else if (type == TileType::SpawnBot) {
                 m_botSpawnWorldPositions.push_back(tileCenterToWorld(gx, gy));
+            } else if (type == TileType::BonusSpot) {
+                m_bonusSpotWorldPositions.push_back(tileCenterToWorld(gx, gy));
             }
         }
     }
@@ -136,6 +139,10 @@ std::optional<std::pair<float, float>> GameMap::getPlayerSpawnWorldPosition() co
 
 const std::vector<std::pair<float, float>>& GameMap::getBotSpawnWorldPositions() const {
     return m_botSpawnWorldPositions;
+}
+
+const std::vector<std::pair<float, float>>& GameMap::getBonusSpotWorldPositions() const {
+    return m_bonusSpotWorldPositions;
 }
 
 size_t GameMap::tileIndex(int gridX, int gridY) const {

@@ -28,6 +28,7 @@ public:
 
     [[nodiscard]] std::optional<std::pair<float, float>> getPlayerSpawnWorldPosition() const;
     [[nodiscard]] const std::vector<std::pair<float, float>>& getBotSpawnWorldPositions() const;
+    [[nodiscard]] const std::vector<std::pair<float, float>>& getBonusSpotWorldPositions() const;
 
     [[nodiscard]] bool isWorldPositionBlockingBullets(float worldX, float worldY) const;
     [[nodiscard]] bool isSegmentBlockedByWall(float startX, float startY, float endX, float endY) const;
@@ -40,6 +41,7 @@ private:
     float m_playerSpawnWorldX = 0.0f;
     float m_playerSpawnWorldY = 0.0f;
     std::vector<std::pair<float, float>> m_botSpawnWorldPositions;
+    std::vector<std::pair<float, float>> m_bonusSpotWorldPositions;
 
     [[nodiscard]] size_t tileIndex(int gridX, int gridY) const;
 };

@@ -60,6 +60,11 @@ void Weapon::update(float deltaSeconds) {
     decayRecoil(deltaSeconds);
 }
 
+void Weapon::refillMagazineToFull() {
+    m_ammoInMagazine = getMagazineCapacity();
+    m_reloadRemaining = 0.0f;
+}
+
 bool Weapon::beginReload() {
     if (m_reloadRemaining > 0.0f) {
         return false;

@@ -2,6 +2,7 @@
 
 #include "controller/input_controller.h"
 
+#include "model/bonus.h"
 #include "model/bullet.h"
 #include "model/bot.h"
 #include "model/game_map.h"
@@ -33,7 +34,7 @@ void setTileColor(TileType type) {
             fl_color(58, 48, 48);
             break;
         case TileType::BonusSpot:
-            fl_color(56, 52, 40);
+            fl_color(52, 56, 64);
             break;
     }
 }
@@ -122,6 +123,42 @@ void GameView::draw() {
                 static_cast<float>(GameMap::TILE_SIZE),
                 static_cast<float>(GameMap::TILE_SIZE));
         }
+    }
+
+    for (const auto& pBonus : mp_gameState->getBonuses()) {
+        if (!pBonus || !pBonus->isActive()) {
+            continue;
+        }
+        const float bonusWorldX = pBonus->getPositionX();
+        const float bonusWorldY = pBonus->getPositionY();
+        const float bonusScreenX = static_cast<float>(x()) + (bonusWorldX - cameraX);
+        const float bonusScreenY = static_cast<float>(y()) + (bonusWorldY - cameraY);
+        const float halfW = pBonus->getWidth() * 0.5f;
+
+        switch (pBonus->getKind()) {
+            case BonusKind::Health:
+                fl_color(80, 220, 120);
+                break;
+            case BonusKind::Ammo:
+                fl_color(255, 200, 90);
+                break;
+            case BonusKind::Armor:
+                fl_color(100, 160, 255);
+                break;
+        }
+        fl_rectf(
+            static_cast<int>(bonusScreenX - halfW),
+            static_cast<int>(bonusScreenY - pBonus->getHeight() * 0.5f),
+            static_cast<int>(pBonus->getWidth()),
+            static_cast<int>(pBonus->getHeight()));
+        const char* label = "+";
+        if (pBonus->getKind() == BonusKind::Ammo) {
+            label = "A";
+        } else if (pBonus->getKind() == BonusKind::Armor) {
+            label = "S";
+        }
+        fl_color(10, 10, 10);
+        fl_draw(label, static_cast<int>(bonusScreenX - 4), static_cast<int>(bonusScreenY + 5));
     }
 
     const float playerScreenX = static_cast<float>(x()) + (playerX - cameraX);

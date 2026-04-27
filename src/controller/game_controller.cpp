@@ -120,6 +120,7 @@ void GameController::tickGame() {
 
     mp_gameState->updateBots(deltaSeconds);
     mp_gameState->updateBullets(deltaSeconds);
+    mp_gameState->updateBonuses(deltaSeconds);
 
     pGameView->redraw();
     mp_mainWindow->getHudView()->redraw();

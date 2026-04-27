@@ -32,6 +32,8 @@ public:
 
     void update(float deltaSeconds);
 
+    void refillMagazineToFull();
+
     bool beginReload();
 
     /// Attempts a shot; on success fills pellet spawns (world angles).

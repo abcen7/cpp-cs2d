@@ -1,8 +1,10 @@
 #pragma once
 
+#include "model/bonus.h"
 #include "model/bullet.h"
 
 #include <memory>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -19,7 +21,7 @@ enum class GameScreenState {
 
 class GameState {
 public:
-    GameState() = default;
+    GameState();
     ~GameState();
 
     void setScreenState(GameScreenState state);
@@ -34,17 +36,26 @@ public:
     void addBullet(std::unique_ptr<Bullet> bullet);
     void updateBullets(float deltaSeconds);
     [[nodiscard]] const std::vector<std::unique_ptr<Bullet>>& getBullets() const;
+    void updateBonuses(float deltaSeconds);
+    [[nodiscard]] const std::vector<std::unique_ptr<Bonus>>& getBonuses() const;
     void updateBots(float deltaSeconds);
     [[nodiscard]] const std::vector<std::shared_ptr<Bot>>& getBots() const;
     [[nodiscard]] int getPlayerScore() const;
 
 private:
     void processBulletCharacterCollisions();
+    void processBonusCollisions();
+    void trySpawnRandomBonus();
+    [[nodiscard]] bool isBonusSpotBlocked(float worldX, float worldY) const;
+    [[nodiscard]] std::unique_ptr<Bonus> createRandomBonus(float worldX, float worldY);
 
     GameScreenState m_screenState = GameScreenState::Menu;
     std::shared_ptr<GameMap> mp_map;
     std::shared_ptr<Player> mp_player;
     std::vector<std::shared_ptr<Bot>> m_bots;
     std::vector<std::unique_ptr<Bullet>> m_bullets;
+    std::vector<std::unique_ptr<Bonus>> m_bonuses;
     int m_playerScore = 0;
+    float m_bonusSpawnCountdownSeconds = 0.0f;
+    std::mt19937 m_randomEngine;
 };
