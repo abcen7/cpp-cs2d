@@ -12,10 +12,11 @@
 #include <mutex>
 
 GameController::GameController()
-    : mp_mainWindow(std::make_unique<MainWindow>(1024, 768, "CS2DS")),
-      mp_gameState(std::make_unique<GameState>()),
+    : m_gameConfig(GameConfig::loadFromFile("assets/config/game.cfg")),
+      mp_mainWindow(std::make_unique<MainWindow>(m_gameConfig)),
+      mp_gameState(std::make_unique<GameState>(m_gameConfig)),
       mp_inputController(std::make_unique<InputController>()),
-      mp_gameLoopController(std::make_unique<GameLoopController>()) {
+      mp_gameLoopController(std::make_unique<GameLoopController>(m_gameConfig.loop.logicHz)) {
     mp_mainWindow->getMenuView()->getNewGameButton()->callback(&GameController::onNewGameClicked, this);
     mp_mainWindow->getMenuView()->getAboutButton()->callback(&GameController::onAboutClicked, this);
     mp_mainWindow->getMenuView()->getExitButton()->callback(&GameController::onExitClicked, this);
@@ -83,7 +84,7 @@ void GameController::scheduleGameTick() {
     if (m_gameTickActive) {
         return;
     }
-    Fl::add_timeout(1.0 / 60.0, &GameController::onGameTick, this);
+    Fl::add_timeout(1.0 / static_cast<double>(m_gameConfig.loop.renderHz), &GameController::onGameTick, this);
     m_gameTickActive = true;
 }
 
@@ -99,7 +100,7 @@ void GameController::onGameTick(void* pData) {
     auto* pController = static_cast<GameController*>(pData);
     pController->tickRender();
     if (pController->m_gameTickActive) {
-        Fl::repeat_timeout(1.0 / 60.0, &GameController::onGameTick, pData);
+        Fl::repeat_timeout(1.0 / static_cast<double>(pController->m_gameConfig.loop.renderHz), &GameController::onGameTick, pData);
     }
 }
 
@@ -200,6 +201,7 @@ void GameController::startGame() {
 
     GameView* pGameView = mp_mainWindow->getGameView();
     pGameView->setBindings(mp_gameState.get(), mp_inputController.get());
+    pGameView->applyTextureConfig(m_gameConfig.textures);
     pGameView->setEscapeHandler(&GameController::onEscapeFromGame, this);
     mp_inputController->setPlayer(mp_gameState->getPlayer().get());
     mp_inputController->reset(static_cast<float>(pGameView->w()), static_cast<float>(pGameView->h()));

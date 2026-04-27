@@ -5,6 +5,7 @@
 
 #include "controller/game_loop_controller.h"
 #include "controller/input_controller.h"
+#include "common/game_config.h"
 #include "model/game_state.h"
 #include "view/main_window.h"
 
@@ -36,6 +37,7 @@ private:
     void scheduleGameTick();
     void unscheduleGameTick();
 
+    GameConfig m_gameConfig;
     std::unique_ptr<MainWindow> mp_mainWindow;
     std::unique_ptr<GameState> mp_gameState;
     std::unique_ptr<InputController> mp_inputController;

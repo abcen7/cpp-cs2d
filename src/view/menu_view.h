@@ -4,9 +4,11 @@
 #include <FL/Fl_Choice.H>
 #include <FL/Fl_Group.H>
 
+#include "common/game_config.h"
+
 class MenuView : public Fl_Group {
 public:
-    MenuView(int x, int y, int width, int height);
+    MenuView(int x, int y, int width, int height, const MenuConfig& config);
 
     [[nodiscard]] Fl_Button* getNewGameButton();
     [[nodiscard]] Fl_Button* getAboutButton();
@@ -18,4 +20,5 @@ private:
     Fl_Button m_aboutButton;
     Fl_Button m_exitButton;
     Fl_Choice m_mapChoice;
+    MenuConfig m_config;
 };

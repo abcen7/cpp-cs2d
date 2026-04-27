@@ -2,6 +2,7 @@
 
 #include <FL/Fl_Double_Window.H>
 
+#include "common/game_config.h"
 #include "view/about_view.h"
 #include "view/game_over_view.h"
 #include "view/game_view.h"
@@ -10,7 +11,7 @@
 
 class MainWindow : public Fl_Double_Window {
 public:
-    MainWindow(int width, int height, const char* title);
+    explicit MainWindow(const GameConfig& config);
 
     void showMenuScreen();
     void showAboutScreen();

@@ -1,12 +1,12 @@
 #include "view/main_window.h"
 
-MainWindow::MainWindow(int width, int height, const char* title)
-    : Fl_Double_Window(width, height, title),
-      m_menuView(0, 0, width, height),
-      m_aboutView(0, 0, width, height),
-      m_gameView(0, 0, width, height - 56),
-      m_hudView(0, height - 56, width, 56),
-      m_gameOverView(0, 0, width, height) {
+MainWindow::MainWindow(const GameConfig& config)
+    : Fl_Double_Window(config.window.width, config.window.height, config.window.title.c_str()),
+      m_menuView(0, 0, config.window.width, config.window.height, config.menu),
+      m_aboutView(0, 0, config.window.width, config.window.height),
+      m_gameView(0, 0, config.window.width, config.window.height - config.window.hudHeight),
+      m_hudView(0, config.window.height - config.window.hudHeight, config.window.width, config.window.hudHeight),
+      m_gameOverView(0, 0, config.window.width, config.window.height) {
     end();
 
     showMenuScreen();

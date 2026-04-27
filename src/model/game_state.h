@@ -2,6 +2,7 @@
 
 #include "model/bonus.h"
 #include "model/bullet.h"
+#include "common/game_config.h"
 
 #include <memory>
 #include <random>
@@ -21,7 +22,7 @@ enum class GameScreenState {
 
 class GameState {
 public:
-    GameState();
+    explicit GameState(const GameConfig& config);
     ~GameState();
 
     void setScreenState(GameScreenState state);
@@ -74,8 +75,12 @@ private:
     bool m_playerRespawnPending = false;
     float m_playerRespawnTimerSeconds = 0.0f;
     std::vector<float> m_botRespawnTimerSeconds;
-    static constexpr float PLAYER_RESPAWN_DELAY_SECONDS = 3.0f;
-    static constexpr float BOT_RESPAWN_DELAY_SECONDS = 5.0f;
+    float m_playerRespawnDelaySeconds = 3.0f;
+    float m_botRespawnDelaySeconds = 5.0f;
+    float m_bonusSpawnMinSeconds = 6.0f;
+    float m_bonusSpawnMaxSeconds = 11.0f;
+    float m_bonusMinDistance = 22.0f;
+    float m_bonusPickupRadius = 40.0f;
     float m_bonusSpawnCountdownSeconds = 0.0f;
     std::mt19937 m_randomEngine;
 };

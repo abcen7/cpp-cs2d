@@ -6,7 +6,7 @@
 
 class GameLoopController {
 public:
-    GameLoopController() = default;
+    explicit GameLoopController(float tickRateHz = 60.0f);
     ~GameLoopController();
 
     void start(const std::function<void(float)>& updateCallback);
@@ -18,4 +18,5 @@ private:
     std::thread m_logicThread;
     std::atomic<bool> m_isRunning = false;
     std::function<void(float)> m_updateCallback;
+    float m_tickRateHz = 60.0f;
 };

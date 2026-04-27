@@ -1,7 +1,10 @@
 #include "controller/game_loop_controller.h"
 
 #include <chrono>
+#include <algorithm>
 #include <utility>
+
+GameLoopController::GameLoopController(float tickRateHz) : m_tickRateHz(std::max(1.0f, tickRateHz)) {}
 
 GameLoopController::~GameLoopController() {
     stop();
@@ -25,7 +28,7 @@ void GameLoopController::stop() {
 void GameLoopController::loop() {
     using clock = std::chrono::steady_clock;
     using secondsf = std::chrono::duration<float>;
-    constexpr float targetStepSeconds = 1.0f / 60.0f;
+    const float targetStepSeconds = 1.0f / m_tickRateHz;
     const auto sleepDuration = std::chrono::duration_cast<clock::duration>(secondsf(targetStepSeconds));
     auto previous = clock::now();
 

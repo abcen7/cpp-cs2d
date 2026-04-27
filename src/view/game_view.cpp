@@ -12,10 +12,12 @@
 
 #include <FL/Enumerations.H>
 #include <FL/Fl.H>
+#include <FL/Fl_PNG_Image.H>
 #include <FL/fl_draw.H>
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <mutex>
 
 namespace {
@@ -47,6 +49,38 @@ GameView::GameView(int x, int y, int width, int height) : Fl_Group(x, y, width, 
     end();
 }
 
+void GameView::applyTextureConfig(const TextureConfig& config) {
+    m_texturesEnabled = config.enabled;
+    m_playerTextureSize = config.playerSize;
+    m_botTextureSize = config.botSize;
+    mp_playerTexture.reset();
+    mp_botTexture.reset();
+    if (!m_texturesEnabled) {
+        return;
+    }
+
+    auto loadPng = [](const std::string& label, const std::string& path, int targetSize) -> std::unique_ptr<Fl_PNG_Image> {
+        if (path.empty()) {
+            std::fprintf(stderr, "[textures] %s: path is empty\n", label.c_str());
+            return nullptr;
+        }
+        auto image = std::make_unique<Fl_PNG_Image>(path.c_str());
+        if (image->fail() || image->w() <= 0 || image->h() <= 0) {
+            std::fprintf(stderr, "[textures] %s: failed to load '%s'\n", label.c_str(), path.c_str());
+            return nullptr;
+        }
+        if (targetSize > 0) {
+            image->scale(targetSize, targetSize, 1, 0);
+        }
+        std::fprintf(stderr, "[textures] %s: loaded '%s' (source %dx%d, scaled to %d)\n",
+            label.c_str(), path.c_str(), image->data_w(), image->data_h(), targetSize);
+        return image;
+    };
+
+    mp_playerTexture = loadPng("player", config.playerPath, m_playerTextureSize);
+    mp_botTexture = loadPng("bot", config.botPath, m_botTextureSize);
+}
+
 void GameView::setBindings(GameState* pGameState, InputController* pInputController) {
     mp_gameState = pGameState;
     mp_inputController = pInputController;
@@ -75,9 +109,10 @@ void GameView::draw() {
     }
     fl_push_clip(x(), y(), w(), h());
 
+    fl_color(20, 22, 28);
+    fl_rectf(x(), y(), w(), h());
+
     if (mp_gameState == nullptr) {
-        fl_color(30, 30, 30);
-        fl_rectf(x(), y(), w(), h());
         fl_color(200, 200, 200);
         fl_draw("No game state", x() + 20, y() + 40);
         fl_pop_clip();
@@ -87,8 +122,6 @@ void GameView::draw() {
     const auto pMap = mp_gameState->getMap();
     const auto pPlayer = mp_gameState->getPlayer();
     if (!pMap || !pPlayer) {
-        fl_color(30, 30, 30);
-        fl_rectf(x(), y(), w(), h());
         fl_color(200, 200, 200);
         fl_draw("Loading...", x() + 20, y() + 40);
         fl_pop_clip();
@@ -173,15 +206,22 @@ void GameView::draw() {
     const float playerScreenX = static_cast<float>(x()) + (playerX - cameraX);
     const float playerScreenY = static_cast<float>(y()) + (playerY - cameraY);
 
-    fl_color(70, 210, 95);
     const float radius = pPlayer->getWidth() * 0.5f;
-    fl_pie(
-        static_cast<int>(playerScreenX - radius),
-        static_cast<int>(playerScreenY - radius),
-        static_cast<int>(pPlayer->getWidth()),
-        static_cast<int>(pPlayer->getHeight()),
-        0.0,
-        360.0);
+    if (m_texturesEnabled && mp_playerTexture) {
+        const int half = m_playerTextureSize / 2;
+        mp_playerTexture->draw(
+            static_cast<int>(playerScreenX) - half,
+            static_cast<int>(playerScreenY) - half);
+    } else {
+        fl_color(70, 210, 95);
+        fl_pie(
+            static_cast<int>(playerScreenX - radius),
+            static_cast<int>(playerScreenY - radius),
+            static_cast<int>(pPlayer->getWidth()),
+            static_cast<int>(pPlayer->getHeight()),
+            0.0,
+            360.0);
+    }
 
     const float aimAngle = pPlayer->getAimAngleRadians();
     const float lineLen = 22.0f;
@@ -198,14 +238,21 @@ void GameView::draw() {
         const float botScreenY = static_cast<float>(y()) + (pBot->getPositionY() - cameraY);
         const float botRadius = pBot->getWidth() * 0.5f;
 
-        fl_color(220, 80, 80);
-        fl_pie(
-            static_cast<int>(botScreenX - botRadius),
-            static_cast<int>(botScreenY - botRadius),
-            static_cast<int>(pBot->getWidth()),
-            static_cast<int>(pBot->getHeight()),
-            0.0,
-            360.0);
+        if (m_texturesEnabled && mp_botTexture) {
+            const int half = m_botTextureSize / 2;
+            mp_botTexture->draw(
+                static_cast<int>(botScreenX) - half,
+                static_cast<int>(botScreenY) - half);
+        } else {
+            fl_color(220, 80, 80);
+            fl_pie(
+                static_cast<int>(botScreenX - botRadius),
+                static_cast<int>(botScreenY - botRadius),
+                static_cast<int>(pBot->getWidth()),
+                static_cast<int>(pBot->getHeight()),
+                0.0,
+                360.0);
+        }
 
         const float botAim = pBot->getAimAngleRadians();
         const float botLineX = botScreenX + std::cos(botAim) * 18.0f;

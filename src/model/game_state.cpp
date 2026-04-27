@@ -14,15 +14,10 @@
 #include <utility>
 
 namespace {
-
-constexpr float BONUS_MIN_DISTANCE = 22.0f;
-/// ~1.25 клетки; подбор в сеточном шутере — около центра бонуса, без капризного AABB.
-constexpr float PICKUP_RADIUS = 40.0f;
-
-bool canCharacterCollectBonus(float charX, float charY, float bonusX, float bonusY) {
+bool canCharacterCollectBonus(float charX, float charY, float bonusX, float bonusY, float pickupRadius) {
     const float ddx = charX - bonusX;
     const float ddy = charY - bonusY;
-    if (ddx * ddx + ddy * ddy <= PICKUP_RADIUS * PICKUP_RADIUS) {
+    if (ddx * ddx + ddy * ddy <= pickupRadius * pickupRadius) {
         return true;
     }
     const int tpx = static_cast<int>(std::floor(charX / static_cast<float>(GameMap::TILE_SIZE)));
@@ -34,7 +29,15 @@ bool canCharacterCollectBonus(float charX, float charY, float bonusX, float bonu
 
 } // namespace
 
-GameState::GameState() {
+GameState::GameState(const GameConfig& config)
+    : m_matchDurationLimitSeconds(config.match.durationSeconds),
+      m_scoreLimit(config.match.scoreLimit),
+      m_playerRespawnDelaySeconds(config.match.playerRespawnSeconds),
+      m_botRespawnDelaySeconds(config.match.botRespawnSeconds),
+      m_bonusSpawnMinSeconds(config.bonus.spawnMinSeconds),
+      m_bonusSpawnMaxSeconds(config.bonus.spawnMaxSeconds),
+      m_bonusMinDistance(config.bonus.minDistance),
+      m_bonusPickupRadius(config.bonus.pickupRadius) {
     m_randomEngine.seed(std::random_device{}());
 }
 
@@ -144,7 +147,7 @@ void GameState::updateBonuses(float deltaSeconds) {
     m_bonusSpawnCountdownSeconds -= deltaSeconds;
     if (m_bonusSpawnCountdownSeconds <= 0.0f) {
         trySpawnRandomBonus();
-        std::uniform_real_distribution<float> interval(6.0f, 11.0f);
+        std::uniform_real_distribution<float> interval(m_bonusSpawnMinSeconds, m_bonusSpawnMaxSeconds);
         m_bonusSpawnCountdownSeconds = interval(m_randomEngine);
     }
 
@@ -180,7 +183,7 @@ void GameState::processBonusCollisions() {
 
         bool collected = false;
         if (mp_player && mp_player->getHealth() > 0) {
-            if (canCharacterCollectBonus(mp_player->getPositionX(), mp_player->getPositionY(), bx, by)) {
+            if (canCharacterCollectBonus(mp_player->getPositionX(), mp_player->getPositionY(), bx, by, m_bonusPickupRadius)) {
                 pBonus->applyToPlayer(*mp_player);
                 collected = true;
             }
@@ -193,7 +196,7 @@ void GameState::processBonusCollisions() {
             if (!pBot || pBot->getHealth() <= 0) {
                 continue;
             }
-            if (canCharacterCollectBonus(pBot->getPositionX(), pBot->getPositionY(), bx, by)) {
+            if (canCharacterCollectBonus(pBot->getPositionX(), pBot->getPositionY(), bx, by, m_bonusPickupRadius)) {
                 pBonus->applyToBot(*pBot);
                 break;
             }
@@ -208,7 +211,7 @@ bool GameState::isBonusSpotBlocked(float worldX, float worldY) const {
         }
         const float dx = pBonus->getPositionX() - worldX;
         const float dy = pBonus->getPositionY() - worldY;
-        if (dx * dx + dy * dy < BONUS_MIN_DISTANCE * BONUS_MIN_DISTANCE) {
+        if (dx * dx + dy * dy < m_bonusMinDistance * m_bonusMinDistance) {
             return true;
         }
     }
@@ -310,7 +313,7 @@ void GameState::schedulePlayerRespawnIfNeeded() {
         return;
     }
     m_playerRespawnPending = true;
-    m_playerRespawnTimerSeconds = PLAYER_RESPAWN_DELAY_SECONDS;
+    m_playerRespawnTimerSeconds = m_playerRespawnDelaySeconds;
 }
 
 void GameState::scheduleBotRespawnIfNeeded(size_t botIndex) {
@@ -324,7 +327,7 @@ void GameState::scheduleBotRespawnIfNeeded(size_t botIndex) {
     if (m_botRespawnTimerSeconds[botIndex] > 0.0f) {
         return;
     }
-    m_botRespawnTimerSeconds[botIndex] = BOT_RESPAWN_DELAY_SECONDS;
+    m_botRespawnTimerSeconds[botIndex] = m_botRespawnDelaySeconds;
 }
 
 void GameState::updateRespawns(float deltaSeconds) {
