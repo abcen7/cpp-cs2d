@@ -122,6 +122,19 @@ void drawRotatedTexture(Fl_PNG_Image* pTexture, float centerX, float centerY, in
     rotatedImage.draw(static_cast<int>(centerX) - half, static_cast<int>(centerY) - half);
 }
 
+void drawDeathOverlay(int x, int y, int width, int height) {
+    // FLTK primitive drawing has no alpha in this pipeline,
+    // so we simulate a translucent red filter with sparse stripes.
+    fl_color(95, 8, 12);
+    for (int yy = y; yy < y + height; yy += 4) {
+        fl_rectf(x, yy, width, 2);
+    }
+    fl_color(135, 18, 26);
+    for (int xx = x; xx < x + width; xx += 6) {
+        fl_rectf(xx, y, 1, height);
+    }
+}
+
 } // namespace
 
 GameView::GameView(int x, int y, int width, int height) : Fl_Group(x, y, width, height) {
@@ -437,6 +450,10 @@ void GameView::draw() {
                 0.0,
                 360.0);
         }
+    }
+
+    if (pPlayer->getHealth() <= 0) {
+        drawDeathOverlay(x(), y(), w(), h());
     }
 
     fl_pop_clip();
