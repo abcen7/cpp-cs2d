@@ -32,6 +32,18 @@ private:
     bool m_texturesEnabled = false;
     int m_playerTextureSize = 32;
     int m_botTextureSize = 32;
+    int m_bonusPickupSize = 28;
+    int m_bulletTextureSize = 10;
     std::unique_ptr<Fl_PNG_Image> mp_playerTexture;
     std::unique_ptr<Fl_PNG_Image> mp_botTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_floorTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_floorAltTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_wallTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_spawnPlayerTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_spawnBotTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_bonusSpotTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_bonusHealthTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_bonusAmmoTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_bonusArmorTexture;
+    std::unique_ptr<Fl_PNG_Image> mp_bulletTexture;
 };

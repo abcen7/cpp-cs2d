@@ -1,15 +1,29 @@
 #include "view/main_window.h"
 
+#include <algorithm>
+
 MainWindow::MainWindow(const GameConfig& config)
     : Fl_Double_Window(config.window.width, config.window.height, config.window.title.c_str()),
+      m_hudHeight(std::max(0, config.window.hudHeight)),
       m_menuView(0, 0, config.window.width, config.window.height, config.menu),
       m_aboutView(0, 0, config.window.width, config.window.height),
-      m_gameView(0, 0, config.window.width, config.window.height - config.window.hudHeight),
-      m_hudView(0, config.window.height - config.window.hudHeight, config.window.width, config.window.hudHeight),
+      m_gameView(0, 0, config.window.width, config.window.height - m_hudHeight),
+      m_hudView(0, config.window.height - m_hudHeight, config.window.width, m_hudHeight),
       m_gameOverView(0, 0, config.window.width, config.window.height) {
     end();
 
     showMenuScreen();
+}
+
+void MainWindow::resize(int X, int Y, int W, int H) {
+    Fl_Double_Window::resize(X, Y, W, H);
+    const int hh = m_hudHeight;
+    const int gameH = std::max(1, H - hh);
+    m_menuView.resize(0, 0, W, H);
+    m_aboutView.resize(0, 0, W, H);
+    m_gameView.resize(0, 0, W, gameH);
+    m_hudView.resize(0, gameH, W, hh);
+    m_gameOverView.resize(0, 0, W, H);
 }
 
 void MainWindow::showMenuScreen() {

@@ -39,7 +39,6 @@ private:
     static constexpr float HITBOX_SIZE = 24.0f;
     static constexpr int START_HEALTH = 100;
     static constexpr float MOVE_SPEED = 200.0f;
-    static constexpr float MUZZLE_OFFSET = 14.0f;
 
     float m_aimAngleRadians = 0.0f;
     bool m_isMoving = false;

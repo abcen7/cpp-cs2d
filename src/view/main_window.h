@@ -13,6 +13,8 @@ class MainWindow : public Fl_Double_Window {
 public:
     explicit MainWindow(const GameConfig& config);
 
+    void resize(int X, int Y, int W, int H) override;
+
     void showMenuScreen();
     void showAboutScreen();
     void showGameScreen();
@@ -25,6 +27,8 @@ public:
     [[nodiscard]] GameOverView* getGameOverView();
 
 private:
+    int m_hudHeight = 56;
+
     MenuView m_menuView;
     AboutView m_aboutView;
     GameView m_gameView;

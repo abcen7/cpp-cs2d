@@ -30,10 +30,25 @@ struct BonusConfig {
 
 struct TextureConfig {
     bool enabled = false;
-    std::string playerPath = "assets/textures/persons/soldier_light.png";
-    std::string botPath = "assets/textures/persons/soldier_dark.png";
-    int playerSize = 32;
-    int botSize = 32;
+    std::string playerPath = "assets/tds-assets/PNG/Man Blue/manBlue_gun.png";
+    std::string botPath = "assets/tds-assets/PNG/Zombie 1/zoimbie1_gun.png";
+    int playerSize = 64;
+    int botSize = 64;
+
+    std::string floorPath = "assets/tds-assets/PNG/Tiles/tile_01.png";
+    std::string floorAltPath = "assets/tds-assets/PNG/Tiles/tile_02.png";
+    std::string wallPath = "assets/tds-assets/PNG/Tiles/tile_13.png";
+    std::string spawnPlayerPath = "assets/tds-assets/PNG/Tiles/tile_04.png";
+    std::string spawnBotPath = "assets/tds-assets/PNG/Tiles/tile_05.png";
+    std::string bonusSpotPath = "assets/tds-assets/PNG/Tiles/tile_03.png";
+
+    std::string bonusHealthPath = "assets/tds-assets/PNG/Tiles/tile_534.png";
+    std::string bonusAmmoPath = "assets/tds-assets/PNG/weapon_gun.png";
+    std::string bonusArmorPath = "assets/tds-assets/PNG/Tiles/tile_505.png";
+
+    std::string bulletPath = "assets/tds-assets/PNG/Tiles/tile_148.png";
+    int bonusPickupSize = 28;
+    int bulletSize = 10;
 };
 
 struct MenuConfig {

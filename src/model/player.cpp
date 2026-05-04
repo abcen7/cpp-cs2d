@@ -8,6 +8,8 @@
 #include "model/shotgun.h"
 #include "model/weapon.h"
 
+#include "common/render_constants.h"
+
 #include <cmath>
 
 Player::Player(float spawnX, float spawnY)
@@ -122,8 +124,9 @@ void Player::tryFireWeapon(GameState& gameState, const GameMap& map) {
     }
 
     const float aim = getAimAngleRadians();
-    const float spawnX = getPositionX() + std::cos(aim) * MUZZLE_OFFSET;
-    const float spawnY = getPositionY() + std::sin(aim) * MUZZLE_OFFSET;
+    float spawnX = 0.0f;
+    float spawnY = 0.0f;
+    characterMuzzleWorldPosition(aim, getPositionX(), getPositionY(), spawnX, spawnY);
 
     const float speed = pWeapon->getBulletSpeedPixelsPerSecond();
     const float weaponRange = pWeapon->getRangePixels();

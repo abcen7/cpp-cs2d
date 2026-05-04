@@ -7,6 +7,8 @@
 #include "model/rifle.h"
 #include "model/weapon.h"
 
+#include "common/render_constants.h"
+
 #include <cmath>
 
 namespace {
@@ -14,7 +16,6 @@ namespace {
 constexpr float HITBOX_SIZE = 24.0f;
 constexpr int START_HEALTH = 100;
 constexpr float MOVE_SPEED = 165.0f;
-constexpr float MUZZLE_OFFSET = 14.0f;
 constexpr float PATROL_REACH_RADIUS = 18.0f;
 
 } // namespace
@@ -83,8 +84,9 @@ void Bot::fireAtPlayer(GameState& gameState) {
         return;
     }
 
-    const float spawnX = getPositionX() + std::cos(m_aimAngleRadians) * MUZZLE_OFFSET;
-    const float spawnY = getPositionY() + std::sin(m_aimAngleRadians) * MUZZLE_OFFSET;
+    float spawnX = 0.0f;
+    float spawnY = 0.0f;
+    characterMuzzleWorldPosition(m_aimAngleRadians, getPositionX(), getPositionY(), spawnX, spawnY);
     for (const auto& pellet : pellets) {
         gameState.addBullet(std::make_unique<Bullet>(
             spawnX,

@@ -10,6 +10,8 @@
 #include "model/player.h"
 #include "model/tile.h"
 
+#include "common/render_constants.h"
+
 #include <FL/Enumerations.H>
 #include <FL/Fl.H>
 #include <FL/Fl_PNG_Image.H>
@@ -23,8 +25,6 @@
 #include <vector>
 
 namespace {
-
-constexpr float kTextureAngleOffsetRadians = -1.5707963267948966f;
 
 void setTileColor(TileType type) {
     switch (type) {
@@ -44,6 +44,18 @@ void setTileColor(TileType type) {
             fl_color(52, 56, 64);
             break;
     }
+}
+
+void drawTextureCentered(Fl_PNG_Image* pTexture, float centerX, float centerY) {
+    if (pTexture == nullptr || pTexture->fail()) {
+        return;
+    }
+    const int tw = pTexture->w();
+    const int th = pTexture->h();
+    if (tw <= 0 || th <= 0) {
+        return;
+    }
+    pTexture->draw(static_cast<int>(centerX) - tw / 2, static_cast<int>(centerY) - th / 2);
 }
 
 void drawRotatedTexture(Fl_PNG_Image* pTexture, float centerX, float centerY, int targetSize, float angleRadians) {
@@ -69,7 +81,7 @@ void drawRotatedTexture(Fl_PNG_Image* pTexture, float centerX, float centerY, in
     const int sourceStride = pTexture->ld() > 0 ? pTexture->ld() : sourceWidth * sourceDepth;
     std::vector<unsigned char> pixels(static_cast<size_t>(targetSize * targetSize * 4), 0);
 
-    const float correctedAngle = angleRadians + kTextureAngleOffsetRadians;
+    const float correctedAngle = angleRadians + kCharacterSpriteAimOffsetRadians;
     const float cosAngle = std::cos(correctedAngle);
     const float sinAngle = std::sin(correctedAngle);
     const float destCenter = (static_cast<float>(targetSize) - 1.0f) * 0.5f;
@@ -121,8 +133,20 @@ void GameView::applyTextureConfig(const TextureConfig& config) {
     m_texturesEnabled = config.enabled;
     m_playerTextureSize = config.playerSize;
     m_botTextureSize = config.botSize;
+    m_bonusPickupSize = config.bonusPickupSize;
+    m_bulletTextureSize = config.bulletSize;
     mp_playerTexture.reset();
     mp_botTexture.reset();
+    mp_floorTexture.reset();
+    mp_floorAltTexture.reset();
+    mp_wallTexture.reset();
+    mp_spawnPlayerTexture.reset();
+    mp_spawnBotTexture.reset();
+    mp_bonusSpotTexture.reset();
+    mp_bonusHealthTexture.reset();
+    mp_bonusAmmoTexture.reset();
+    mp_bonusArmorTexture.reset();
+    mp_bulletTexture.reset();
     if (!m_texturesEnabled) {
         return;
     }
@@ -145,8 +169,21 @@ void GameView::applyTextureConfig(const TextureConfig& config) {
         return image;
     };
 
+    const int tilePx = GameMap::TILE_SIZE;
     mp_playerTexture = loadPng("player", config.playerPath, m_playerTextureSize);
     mp_botTexture = loadPng("bot", config.botPath, m_botTextureSize);
+    mp_floorTexture = loadPng("tile_floor", config.floorPath, tilePx);
+    if (!config.floorAltPath.empty()) {
+        mp_floorAltTexture = loadPng("tile_floor_alt", config.floorAltPath, tilePx);
+    }
+    mp_wallTexture = loadPng("tile_wall", config.wallPath, tilePx);
+    mp_spawnPlayerTexture = loadPng("tile_spawn_player", config.spawnPlayerPath, tilePx);
+    mp_spawnBotTexture = loadPng("tile_spawn_bot", config.spawnBotPath, tilePx);
+    mp_bonusSpotTexture = loadPng("tile_bonus_spot", config.bonusSpotPath, tilePx);
+    mp_bonusHealthTexture = loadPng("bonus_health", config.bonusHealthPath, m_bonusPickupSize);
+    mp_bonusAmmoTexture = loadPng("bonus_ammo", config.bonusAmmoPath, m_bonusPickupSize);
+    mp_bonusArmorTexture = loadPng("bonus_armor", config.bonusArmorPath, m_bonusPickupSize);
+    mp_bulletTexture = loadPng("bullet", config.bulletPath, m_bulletTextureSize);
 }
 
 void GameView::setBindings(GameState* pGameState, InputController* pInputController) {
@@ -225,13 +262,40 @@ void GameView::draw() {
             const float worldTop = static_cast<float>(gy * GameMap::TILE_SIZE);
             const float screenLeft = static_cast<float>(x()) + (worldLeft - cameraX);
             const float screenTop = static_cast<float>(y()) + (worldTop - cameraY);
+            const float centerX = screenLeft + static_cast<float>(GameMap::TILE_SIZE) * 0.5f;
+            const float centerY = screenTop + static_cast<float>(GameMap::TILE_SIZE) * 0.5f;
 
-            setTileColor(tile.getType());
-            fl_rectf(
-                screenLeft,
-                screenTop,
-                static_cast<float>(GameMap::TILE_SIZE),
-                static_cast<float>(GameMap::TILE_SIZE));
+            Fl_PNG_Image* pTileImage = nullptr;
+            if (m_texturesEnabled) {
+                switch (tile.getType()) {
+                    case TileType::Wall:
+                        pTileImage = mp_wallTexture.get();
+                        break;
+                    case TileType::Floor:
+                        pTileImage = (((gx + gy) & 1) != 0 && mp_floorAltTexture) ? mp_floorAltTexture.get() : mp_floorTexture.get();
+                        break;
+                    case TileType::SpawnPlayer:
+                        pTileImage = mp_spawnPlayerTexture.get();
+                        break;
+                    case TileType::SpawnBot:
+                        pTileImage = mp_spawnBotTexture.get();
+                        break;
+                    case TileType::BonusSpot:
+                        pTileImage = mp_bonusSpotTexture.get();
+                        break;
+                }
+            }
+
+            if (pTileImage != nullptr && !pTileImage->fail()) {
+                drawTextureCentered(pTileImage, centerX, centerY);
+            } else {
+                setTileColor(tile.getType());
+                fl_rectf(
+                    screenLeft,
+                    screenTop,
+                    static_cast<float>(GameMap::TILE_SIZE),
+                    static_cast<float>(GameMap::TILE_SIZE));
+            }
         }
     }
 
@@ -245,30 +309,49 @@ void GameView::draw() {
         const float bonusScreenY = static_cast<float>(y()) + (bonusWorldY - cameraY);
         const float halfW = pBonus->getWidth() * 0.5f;
 
-        switch (pBonus->getKind()) {
-            case BonusKind::Health:
-                fl_color(80, 220, 120);
-                break;
-            case BonusKind::Ammo:
-                fl_color(255, 200, 90);
-                break;
-            case BonusKind::Armor:
-                fl_color(100, 160, 255);
-                break;
+        Fl_PNG_Image* pBonusImage = nullptr;
+        if (m_texturesEnabled) {
+            switch (pBonus->getKind()) {
+                case BonusKind::Health:
+                    pBonusImage = mp_bonusHealthTexture.get();
+                    break;
+                case BonusKind::Ammo:
+                    pBonusImage = mp_bonusAmmoTexture.get();
+                    break;
+                case BonusKind::Armor:
+                    pBonusImage = mp_bonusArmorTexture.get();
+                    break;
+            }
         }
-        fl_rectf(
-            static_cast<int>(bonusScreenX - halfW),
-            static_cast<int>(bonusScreenY - pBonus->getHeight() * 0.5f),
-            static_cast<int>(pBonus->getWidth()),
-            static_cast<int>(pBonus->getHeight()));
-        const char* label = "+";
-        if (pBonus->getKind() == BonusKind::Ammo) {
-            label = "A";
-        } else if (pBonus->getKind() == BonusKind::Armor) {
-            label = "S";
+
+        if (pBonusImage != nullptr && !pBonusImage->fail()) {
+            drawTextureCentered(pBonusImage, bonusScreenX, bonusScreenY);
+        } else {
+            switch (pBonus->getKind()) {
+                case BonusKind::Health:
+                    fl_color(80, 220, 120);
+                    break;
+                case BonusKind::Ammo:
+                    fl_color(255, 200, 90);
+                    break;
+                case BonusKind::Armor:
+                    fl_color(100, 160, 255);
+                    break;
+            }
+            fl_rectf(
+                static_cast<int>(bonusScreenX - halfW),
+                static_cast<int>(bonusScreenY - pBonus->getHeight() * 0.5f),
+                static_cast<int>(pBonus->getWidth()),
+                static_cast<int>(pBonus->getHeight()));
+            const char* label = "+";
+            if (pBonus->getKind() == BonusKind::Ammo) {
+                label = "A";
+            } else if (pBonus->getKind() == BonusKind::Armor) {
+                label = "S";
+            }
+            fl_color(10, 10, 10);
+            fl_draw(label, static_cast<int>(bonusScreenX - 4), static_cast<int>(bonusScreenY + 5));
         }
-        fl_color(10, 10, 10);
-        fl_draw(label, static_cast<int>(bonusScreenX - 4), static_cast<int>(bonusScreenY + 5));
     }
 
     const float playerScreenX = static_cast<float>(x()) + (playerX - cameraX);
@@ -342,14 +425,18 @@ void GameView::draw() {
         const float bulletScreenX = static_cast<float>(x()) + (bulletWorldX - cameraX);
         const float bulletScreenY = static_cast<float>(y()) + (bulletWorldY - cameraY);
         const float bulletRadius = pBullet->getWidth() * 0.5f;
-        fl_color(255, 210, 70);
-        fl_pie(
-            static_cast<int>(bulletScreenX - bulletRadius),
-            static_cast<int>(bulletScreenY - bulletRadius),
-            static_cast<int>(pBullet->getWidth()),
-            static_cast<int>(pBullet->getHeight()),
-            0.0,
-            360.0);
+        if (m_texturesEnabled && mp_bulletTexture && !mp_bulletTexture->fail()) {
+            drawTextureCentered(mp_bulletTexture.get(), bulletScreenX, bulletScreenY);
+        } else {
+            fl_color(255, 210, 70);
+            fl_pie(
+                static_cast<int>(bulletScreenX - bulletRadius),
+                static_cast<int>(bulletScreenY - bulletRadius),
+                static_cast<int>(pBullet->getWidth()),
+                static_cast<int>(pBullet->getHeight()),
+                0.0,
+                360.0);
+        }
     }
 
     fl_pop_clip();

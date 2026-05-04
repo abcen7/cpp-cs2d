@@ -195,6 +195,30 @@ GameConfig GameConfig::loadFromFile(const std::string& path) {
             config.textures.playerSize = std::max(4, parseInt(value, config.textures.playerSize));
         } else if (key == "textures.bot_size") {
             config.textures.botSize = std::max(4, parseInt(value, config.textures.botSize));
+        } else if (key == "textures.floor_path") {
+            config.textures.floorPath = resolvePath(value);
+        } else if (key == "textures.floor_alt_path") {
+            config.textures.floorAltPath = resolvePath(value);
+        } else if (key == "textures.wall_path") {
+            config.textures.wallPath = resolvePath(value);
+        } else if (key == "textures.spawn_player_path") {
+            config.textures.spawnPlayerPath = resolvePath(value);
+        } else if (key == "textures.spawn_bot_path") {
+            config.textures.spawnBotPath = resolvePath(value);
+        } else if (key == "textures.bonus_spot_path") {
+            config.textures.bonusSpotPath = resolvePath(value);
+        } else if (key == "textures.bonus_health_path") {
+            config.textures.bonusHealthPath = resolvePath(value);
+        } else if (key == "textures.bonus_ammo_path") {
+            config.textures.bonusAmmoPath = resolvePath(value);
+        } else if (key == "textures.bonus_armor_path") {
+            config.textures.bonusArmorPath = resolvePath(value);
+        } else if (key == "textures.bullet_path") {
+            config.textures.bulletPath = resolvePath(value);
+        } else if (key == "textures.bonus_pickup_size") {
+            config.textures.bonusPickupSize = std::max(4, parseInt(value, config.textures.bonusPickupSize));
+        } else if (key == "textures.bullet_size") {
+            config.textures.bulletSize = std::max(2, parseInt(value, config.textures.bulletSize));
         } else if (key == "menu.map.simple") {
             config.menu.simpleMapPath = resolvePath(value);
         } else if (key == "menu.map.crossfire") {
