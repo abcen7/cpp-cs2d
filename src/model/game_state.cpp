@@ -27,6 +27,32 @@ bool canCharacterCollectBonus(float charX, float charY, float bonusX, float bonu
     return tpx == tbx && tpy == tby;
 }
 
+template <typename TContainer>
+void removeInactiveEntities(TContainer& entities) {
+    const auto removeIt = std::remove_if(
+        entities.begin(),
+        entities.end(),
+        [](const auto& entityPtr) { return !entityPtr || !entityPtr->isActive(); });
+    entities.erase(removeIt, entities.end());
+}
+
+template <typename TCharacter>
+bool tryApplyBulletDamage(const Bullet& bullet, TCharacter& character) {
+    const float halfW = character.getWidth() * 0.5f;
+    const float halfH = character.getHeight() * 0.5f;
+    const float left = character.getPositionX() - halfW;
+    const float right = character.getPositionX() + halfW;
+    const float top = character.getPositionY() - halfH;
+    const float bottom = character.getPositionY() + halfH;
+    const float x = bullet.getPositionX();
+    const float y = bullet.getPositionY();
+    if (x < left || x > right || y < top || y > bottom) {
+        return false;
+    }
+    character.applyDamage(bullet.getDamage());
+    return true;
+}
+
 }
 
 GameState::GameState(const GameConfig& config)
@@ -52,15 +78,7 @@ GameScreenState GameState::getScreenState() const {
 }
 
 bool GameState::beginNewGame(const std::string& mapPath) {
-    m_playerScore = 0;
-    m_elapsedMatchSeconds = 0.0f;
-    m_bots.clear();
-    m_bullets.clear();
-    m_bonuses.clear();
-    m_playerRespawnPending = false;
-    m_playerRespawnTimerSeconds = 0.0f;
-    m_botRespawnTimerSeconds.clear();
-    m_bonusSpawnCountdownSeconds = 0.0f;
+    resetSessionState();
 
     auto pMap = std::make_shared<GameMap>();
     if (!pMap->loadFromFile(mapPath)) {
@@ -92,6 +110,12 @@ bool GameState::beginNewGame(const std::string& mapPath) {
 }
 
 void GameState::clearSession() {
+    resetSessionState();
+    mp_map.reset();
+    mp_player.reset();
+}
+
+void GameState::resetSessionState() {
     m_playerScore = 0;
     m_elapsedMatchSeconds = 0.0f;
     m_bots.clear();
@@ -101,8 +125,6 @@ void GameState::clearSession() {
     m_playerRespawnTimerSeconds = 0.0f;
     m_botRespawnTimerSeconds.clear();
     m_bonusSpawnCountdownSeconds = 0.0f;
-    mp_map.reset();
-    mp_player.reset();
 }
 
 std::shared_ptr<GameMap> GameState::getMap() const {
@@ -159,13 +181,7 @@ void GameState::updateBonuses(float deltaSeconds) {
         }
     }
 
-    {
-        const auto removeIt = std::remove_if(
-            m_bonuses.begin(), m_bonuses.end(), [](const std::unique_ptr<Bonus>& pBonus) {
-                return !pBonus || !pBonus->isActive();
-            });
-        m_bonuses.erase(removeIt, m_bonuses.end());
-    }
+    removeInactiveEntities(m_bonuses);
 }
 
 const std::vector<std::unique_ptr<Bonus>>& GameState::getBonuses() const {
@@ -370,23 +386,6 @@ void GameState::processBulletCharacterCollisions() {
             continue;
         }
 
-        auto hitCharacter = [&](auto& character) -> bool {
-            const float halfW = character.getWidth() * 0.5f;
-            const float halfH = character.getHeight() * 0.5f;
-            const float left = character.getPositionX() - halfW;
-            const float right = character.getPositionX() + halfW;
-            const float top = character.getPositionY() - halfH;
-            const float bottom = character.getPositionY() + halfH;
-            const float x = pBullet->getPositionX();
-            const float y = pBullet->getPositionY();
-            if (x >= left && x <= right && y >= top && y <= bottom) {
-                character.applyDamage(pBullet->getDamage());
-                pBullet->destroy();
-                return true;
-            }
-            return false;
-        };
-
         if (pBullet->getTeam() == BulletTeam::Player) {
             for (size_t i = 0; i < m_bots.size(); ++i) {
                 const auto& pBot = m_bots[i];
@@ -394,7 +393,8 @@ void GameState::processBulletCharacterCollisions() {
                     continue;
                 }
                 const int hpBefore = pBot->getHealth();
-                if (hitCharacter(*pBot)) {
+                if (tryApplyBulletDamage(*pBullet, *pBot)) {
+                    pBullet->destroy();
                     if (hpBefore > 0 && pBot->getHealth() <= 0) {
                         m_playerScore += 1;
                         scheduleBotRespawnIfNeeded(i);
@@ -405,8 +405,11 @@ void GameState::processBulletCharacterCollisions() {
         } else {
             if (mp_player->getHealth() > 0) {
                 const int hpBefore = mp_player->getHealth();
-                if (hitCharacter(*mp_player) && hpBefore > 0 && mp_player->getHealth() <= 0) {
-                    schedulePlayerRespawnIfNeeded();
+                if (tryApplyBulletDamage(*pBullet, *mp_player)) {
+                    pBullet->destroy();
+                    if (hpBefore > 0 && mp_player->getHealth() <= 0) {
+                        schedulePlayerRespawnIfNeeded();
+                    }
                 }
             }
         }

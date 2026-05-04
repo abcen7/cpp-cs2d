@@ -36,6 +36,7 @@ private:
     void handleGameOverIfNeeded();
     void scheduleGameTick();
     void unscheduleGameTick();
+    void clearGameplayBindings();
 
     GameConfig m_gameConfig;
     std::unique_ptr<MainWindow> mp_mainWindow;

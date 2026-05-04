@@ -20,12 +20,7 @@ std::string trim(std::string s) {
 }
 
 bool GameMap::loadFromFile(const std::string& path) {
-    m_tiles.clear();
-    m_widthInTiles = 0;
-    m_heightInTiles = 0;
-    m_hasPlayerSpawn = false;
-    m_botSpawnWorldPositions.clear();
-    m_bonusSpotWorldPositions.clear();
+    resetLoadedData();
 
     std::ifstream file(path);
     if (!file) {
@@ -76,9 +71,7 @@ bool GameMap::loadFromFile(const std::string& path) {
             const int code = rows[static_cast<size_t>(gy)][static_cast<size_t>(gx)];
             const auto typeOpt = Tile::tryParseMapCode(code);
             if (!typeOpt.has_value()) {
-                m_tiles.clear();
-                m_widthInTiles = 0;
-                m_heightInTiles = 0;
+                invalidateLoadedData();
                 return false;
             }
             const TileType type = *typeOpt;
@@ -98,6 +91,22 @@ bool GameMap::loadFromFile(const std::string& path) {
     }
 
     return true;
+}
+
+void GameMap::resetLoadedData() {
+    m_tiles.clear();
+    m_widthInTiles = 0;
+    m_heightInTiles = 0;
+    m_hasPlayerSpawn = false;
+    m_playerSpawnWorldX = 0.0f;
+    m_playerSpawnWorldY = 0.0f;
+    m_botSpawnWorldPositions.clear();
+    m_bonusSpotWorldPositions.clear();
+}
+
+void GameMap::invalidateLoadedData() {
+    // Сбрасываем в предсказуемое пустое состояние при ошибке загрузки.
+    resetLoadedData();
 }
 
 int GameMap::getWidthInTiles() const {

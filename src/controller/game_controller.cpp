@@ -11,6 +11,19 @@
 #include <cstdio>
 #include <mutex>
 
+namespace {
+
+template <typename TAction>
+void runControllerAction(void* pData, TAction&& action) {
+    auto* pController = static_cast<GameController*>(pData);
+    if (!pController) {
+        return;
+    }
+    action(*pController);
+}
+
+}
+
 GameController::GameController()
     : m_gameConfig(GameConfig::loadFromFile("assets/config/game.cfg")),
       mp_mainWindow(std::make_unique<MainWindow>(m_gameConfig)),
@@ -38,14 +51,12 @@ void GameController::run() {
 
 void GameController::onNewGameClicked(Fl_Widget* pWidget, void* pData) {
     (void)pWidget;
-    auto* pController = static_cast<GameController*>(pData);
-    pController->startGame();
+    runControllerAction(pData, [](GameController& controller) { controller.startGame(); });
 }
 
 void GameController::onAboutClicked(Fl_Widget* pWidget, void* pData) {
     (void)pWidget;
-    auto* pController = static_cast<GameController*>(pData);
-    pController->showAbout();
+    runControllerAction(pData, [](GameController& controller) { controller.showAbout(); });
 }
 
 void GameController::onExitClicked(Fl_Widget* pWidget, void* pData) {
@@ -56,20 +67,17 @@ void GameController::onExitClicked(Fl_Widget* pWidget, void* pData) {
 
 void GameController::onBackFromAboutClicked(Fl_Widget* pWidget, void* pData) {
     (void)pWidget;
-    auto* pController = static_cast<GameController*>(pData);
-    pController->showMenu();
+    runControllerAction(pData, [](GameController& controller) { controller.showMenu(); });
 }
 
 void GameController::onBackToMenuClicked(Fl_Widget* pWidget, void* pData) {
     (void)pWidget;
-    auto* pController = static_cast<GameController*>(pData);
-    pController->stopGameAndReturnMenu();
+    runControllerAction(pData, [](GameController& controller) { controller.stopGameAndReturnMenu(); });
 }
 
 void GameController::showMenu() {
     unscheduleGameTick();
-    mp_inputController->setPlayer(nullptr);
-    mp_mainWindow->getGameView()->clearBindings();
+    clearGameplayBindings();
     mp_mainWindow->getHudView()->clearGameState();
     mp_gameState->setScreenState(GameScreenState::Menu);
     mp_mainWindow->showMenuScreen();
@@ -105,8 +113,7 @@ void GameController::onGameTick(void* pData) {
 }
 
 void GameController::onEscapeFromGame(void* pData) {
-    auto* pController = static_cast<GameController*>(pData);
-    pController->stopGameAndReturnMenu();
+    runControllerAction(pData, [](GameController& controller) { controller.stopGameAndReturnMenu(); });
 }
 
 void GameController::tickRender() {
@@ -185,8 +192,7 @@ void GameController::handleGameOverIfNeeded() {
 
     mp_gameLoopController->stop();
     unscheduleGameTick();
-    mp_inputController->setPlayer(nullptr);
-    mp_mainWindow->getGameView()->clearBindings();
+    clearGameplayBindings();
     mp_mainWindow->getGameOverView()->setFinalText(finalText);
     mp_mainWindow->showGameOverScreen();
 }
@@ -218,4 +224,9 @@ void GameController::stopGameAndReturnMenu() {
     mp_gameLoopController->stop();
     mp_gameState->clearSession();
     showMenu();
+}
+
+void GameController::clearGameplayBindings() {
+    mp_inputController->setPlayer(nullptr);
+    mp_mainWindow->getGameView()->clearBindings();
 }

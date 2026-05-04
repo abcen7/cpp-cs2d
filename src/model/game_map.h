@@ -34,6 +34,9 @@ public:
     [[nodiscard]] bool isSegmentBlockedByWall(float startX, float startY, float endX, float endY) const;
 
 private:
+    void resetLoadedData();
+    void invalidateLoadedData();
+
     int m_widthInTiles = 0;
     int m_heightInTiles = 0;
     std::vector<Tile> m_tiles;

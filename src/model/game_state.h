@@ -52,6 +52,7 @@ public:
     void updateRespawns(float deltaSeconds);
 
 private:
+    void resetSessionState();
     void processBulletCharacterCollisions();
     void processBonusCollisions();
     void trySpawnRandomBonus();
