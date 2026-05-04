@@ -12,7 +12,7 @@ namespace {
 constexpr float DETECTION_RADIUS = 300.0f;
 constexpr float CHASE_STOP_RADIUS = 26.0f;
 
-} // namespace
+}
 
 void BotStateMachine::update(Bot& bot, const GameMap& map, const Player& player, float deltaSeconds) {
     (void)deltaSeconds;

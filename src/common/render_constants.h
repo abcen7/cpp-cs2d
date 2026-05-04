@@ -2,16 +2,15 @@
 
 #include <cmath>
 
-/// Must match the rotation applied in `GameView::drawRotatedTexture` when drawing character PNGs.
-/// Kenney Top-Down Shooter `*_gun` sprites are right-facing in source texture,
-/// so no additional fixed 90deg correction is needed.
+/// Смещение угла должно совпадать с поворотом спрайта при отрисовке,
+/// иначе направление спрайта и баллистика будут расходиться.
 inline constexpr float kCharacterSpriteAimOffsetRadians = 0.0f;
 
-/// Barrel tip in **unrotated** texture space (pixels from sprite center, y down), Kenney `*_gun` ~64px.
+/// Смещение дула в неповернутой текстуре (в пикселях от центра спрайта).
 inline constexpr float kMuzzleTextureOffsetX = 28.0f;
 inline constexpr float kMuzzleTextureOffsetY = 5.0f;
 
-/// World position of barrel tip: same 2D rotation as `drawRotatedTexture` (`aim + kCharacterSpriteAimOffsetRadians`).
+/// Переносит смещение дула в мировые координаты тем же поворотом, что и отрисовка спрайта.
 inline void characterMuzzleWorldPosition(float aimRadians, float centerX, float centerY, float& outX, float& outY) {
     const float th = aimRadians + kCharacterSpriteAimOffsetRadians;
     const float c = std::cos(th);

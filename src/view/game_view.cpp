@@ -58,6 +58,7 @@ void drawTextureCentered(Fl_PNG_Image* pTexture, float centerX, float centerY) {
     pTexture->draw(static_cast<int>(centerX) - tw / 2, static_cast<int>(centerY) - th / 2);
 }
 
+/// Поворачивает спрайт вручную по пикселям, потому что текущий рендер не даёт готового поворота текстуры с прозрачностью.
 void drawRotatedTexture(Fl_PNG_Image* pTexture, float centerX, float centerY, int targetSize, float angleRadians) {
     if (pTexture == nullptr || targetSize <= 0) {
         return;
@@ -122,9 +123,8 @@ void drawRotatedTexture(Fl_PNG_Image* pTexture, float centerX, float centerY, in
     rotatedImage.draw(static_cast<int>(centerX) - half, static_cast<int>(centerY) - half);
 }
 
+/// Имитирует полупрозрачный красный фильтр штрихами: в текущем пайплайне нет смешивания прозрачности для примитивов.
 void drawDeathOverlay(int x, int y, int width, int height) {
-    // FLTK primitive drawing has no alpha in this pipeline,
-    // so we simulate a translucent red filter with sparse stripes.
     fl_color(95, 8, 12);
     for (int yy = y; yy < y + height; yy += 4) {
         fl_rectf(x, yy, width, 2);
@@ -135,7 +135,7 @@ void drawDeathOverlay(int x, int y, int width, int height) {
     }
 }
 
-} // namespace
+}
 
 GameView::GameView(int x, int y, int width, int height) : Fl_Group(x, y, width, height) {
     box(FL_NO_BOX);

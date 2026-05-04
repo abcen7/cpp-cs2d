@@ -12,7 +12,7 @@ constexpr float BONUS_LIFETIME_SECONDS = 32.0f;
 constexpr int HEAL_AMOUNT = 25;
 constexpr int MAX_STAT = 100;
 
-} // namespace
+}
 
 HealthPack::HealthPack(float positionX, float positionY)
     : Bonus(positionX, positionY, BONUS_SIZE, BONUS_SIZE, BONUS_LIFETIME_SECONDS) {}

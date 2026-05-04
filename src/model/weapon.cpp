@@ -13,7 +13,7 @@ float randomUniform(float minValue, float maxValue) {
     return dist(g_rng);
 }
 
-} // namespace
+}
 
 Weapon::~Weapon() = default;
 
@@ -76,6 +76,7 @@ bool Weapon::beginReload() {
     return true;
 }
 
+/// Формирует пеллеты с учётом разброса от движения и накопленной отдачи, чтобы модель стрельбы была детерминированной по состоянию оружия.
 bool Weapon::tryFire(float aimRadians, bool isMoving, std::vector<PelletSpawn>& outPellets) {
     outPellets.clear();
 

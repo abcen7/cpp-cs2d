@@ -9,7 +9,7 @@ namespace {
 constexpr float BONUS_SIZE = 20.0f;
 constexpr float BONUS_LIFETIME_SECONDS = 28.0f;
 
-} // namespace
+}
 
 AmmoPack::AmmoPack(float positionX, float positionY)
     : Bonus(positionX, positionY, BONUS_SIZE, BONUS_SIZE, BONUS_LIFETIME_SECONDS) {}

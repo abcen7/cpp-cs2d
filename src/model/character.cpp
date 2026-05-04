@@ -10,7 +10,7 @@ namespace {
 constexpr int MAX_HEALTH = 100;
 constexpr int MAX_ARMOR = 100;
 
-} // namespace
+}
 
 Character::~Character() = default;
 

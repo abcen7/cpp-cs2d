@@ -30,7 +30,7 @@ bool isMoveRightKey(int key) {
     return key == FL_Right || isKeyMatch(key, 'd', 'D') || key == static_cast<int>(U'в') || key == static_cast<int>(U'В');
 }
 
-} // namespace
+}
 
 void InputController::reset(float viewWidth, float viewHeight) {
     std::lock_guard<std::mutex> lock(m_inputMutex);

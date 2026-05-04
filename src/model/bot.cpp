@@ -18,7 +18,7 @@ constexpr int START_HEALTH = 100;
 constexpr float MOVE_SPEED = 165.0f;
 constexpr float PATROL_REACH_RADIUS = 18.0f;
 
-} // namespace
+}
 
 Bot::Bot(float spawnX, float spawnY, std::shared_ptr<GameMap> pMap)
     : Character(spawnX, spawnY, HITBOX_SIZE, HITBOX_SIZE, START_HEALTH, 0, MOVE_SPEED),

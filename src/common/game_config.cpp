@@ -113,7 +113,7 @@ std::string resolvePathRelativeTo(const std::string& value, const fs::path& conf
     return value;
 }
 
-} // namespace
+}
 
 GameConfig GameConfig::loadFromFile(const std::string& path) {
     GameConfig config;

@@ -8,7 +8,7 @@ namespace {
 
 constexpr float BULLET_SIZE = 3.0f;
 
-} // namespace
+}
 
 Bullet::Bullet(float positionX,
     float positionY,

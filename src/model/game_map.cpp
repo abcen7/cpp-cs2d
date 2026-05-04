@@ -17,7 +17,7 @@ std::string trim(std::string s) {
     return s;
 }
 
-} // namespace
+}
 
 bool GameMap::loadFromFile(const std::string& path) {
     m_tiles.clear();
@@ -158,6 +158,7 @@ bool GameMap::isWorldPositionBlockingBullets(float worldX, float worldY) const {
     return !getTile(gridX, gridY).isPassable();
 }
 
+/// Проверяет отрезок трассировкой по мелким шагам: это дешевле полноценной лучевой проверки и устойчиво к тонким стенам тайл-сетки.
 bool GameMap::isSegmentBlockedByWall(float startX, float startY, float endX, float endY) const {
     const float dx = endX - startX;
     const float dy = endY - startY;

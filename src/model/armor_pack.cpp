@@ -12,7 +12,7 @@ constexpr float BONUS_LIFETIME_SECONDS = 30.0f;
 constexpr int ARMOR_BONUS = 50;
 constexpr int MAX_ARMOR = 100;
 
-} // namespace
+}
 
 ArmorPack::ArmorPack(float positionX, float positionY)
     : Bonus(positionX, positionY, BONUS_SIZE, BONUS_SIZE, BONUS_LIFETIME_SECONDS) {}

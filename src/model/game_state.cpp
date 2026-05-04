@@ -27,7 +27,7 @@ bool canCharacterCollectBonus(float charX, float charY, float bonusX, float bonu
     return tpx == tbx && tpy == tby;
 }
 
-} // namespace
+}
 
 GameState::GameState(const GameConfig& config)
     : m_matchDurationLimitSeconds(config.match.durationSeconds),

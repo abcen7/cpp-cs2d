@@ -23,7 +23,7 @@ public:
     [[nodiscard]] const Tile& getTile(int gridX, int gridY) const;
     [[nodiscard]] bool isInsideMap(int gridX, int gridY) const;
 
-    /// World coordinates of tile center (for spawns and rendering).
+    /// Возвращает центр тайла в мировых координатах, чтобы спавны и рендер попадали в один и тот же якорь.
     [[nodiscard]] static std::pair<float, float> tileCenterToWorld(int gridX, int gridY);
 
     [[nodiscard]] std::optional<std::pair<float, float>> getPlayerSpawnWorldPosition() const;

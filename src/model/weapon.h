@@ -36,7 +36,7 @@ public:
 
     bool beginReload();
 
-    /// Attempts a shot; on success fills pellet spawns (world angles).
+    /// Пытается выполнить выстрел и при успехе заполняет пеллеты углами в мировом пространстве.
     bool tryFire(float aimRadians, bool isMoving, std::vector<PelletSpawn>& outPellets);
 
 protected:

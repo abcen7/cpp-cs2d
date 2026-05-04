@@ -30,7 +30,7 @@ std::unique_ptr<Fl_Image> loadSvgIcon(const char* path) {
     return pImage;
 }
 
-} // namespace
+}
 
 HudView::HudView(int x, int y, int width, int height) : Fl_Group(x, y, width, height) {
     mp_healthIcon = loadSvgIcon("assets/icons/health.svg");
@@ -129,7 +129,6 @@ void HudView::draw() {
     fl_font(FL_HELVETICA_BOLD, 24);
     fl_color(HUD_ACCENT_R, HUD_ACCENT_G, HUD_ACCENT_B);
 
-    // Left: health and armor
     int leftX = x() + 14;
     drawIconOrFallback(mp_healthIcon.get(), leftX, iconY, ICON_SIZE, "+");
     leftX += ICON_SIZE + 8;
@@ -140,7 +139,6 @@ void HudView::draw() {
     leftX += ICON_SIZE + 8;
     fl_draw(armorText, leftX, baselineY);
 
-    // Center: match timer
     fl_font(FL_HELVETICA_BOLD, 28);
     const int timerTextWidth = static_cast<int>(fl_width(timeText));
     const int timerBlockWidth = ICON_SIZE + 10 + timerTextWidth;
@@ -149,7 +147,6 @@ void HudView::draw() {
     timerX += ICON_SIZE + 10;
     fl_draw(timeText, timerX, baselineY);
 
-    // Right: ammo
     fl_font(FL_HELVETICA_BOLD, 22);
     const int ammoTextWidth = static_cast<int>(fl_width(ammoText));
     const int weaponTextWidth = static_cast<int>(fl_width(weaponText));
@@ -160,7 +157,6 @@ void HudView::draw() {
     rightX += weaponTextWidth + 10;
     fl_draw(ammoText, rightX, baselineY);
 
-    // Secondary info (score/dead state) in small muted text.
     fl_font(FL_HELVETICA, 14);
     fl_color(205, 210, 220);
     fl_draw(scoreText, x() + 16, y() + 16);
